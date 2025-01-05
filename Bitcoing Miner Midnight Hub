@@ -1,25 +1,40 @@
-if game.CoreGui:FindFirstChild("BCMX") then
-    game.CoreGui:FindFirstChild("BCMX"):Destroy()
+-- Check for and remove existing GUI
+if game:GetService("CoreGui"):FindFirstChild("BCMX") then
+    game:GetService("CoreGui"):FindFirstChild("BCMX"):Destroy()
+end
+
+-- Error handling for loadstring
+local success, lib = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/GreenDeno/Venyx-UI-Library/main/source.lua"))()
+end)
+
+if not success then
+    warn("Failed to load UI library. Attempting backup method...")
+    -- You might want to add a backup UI library here if needed
+    return
+end
+
+-- Initialize variables
+local WS = game:GetService("Workspace")
+local LP = game:GetService("Players").LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+
+-- Create main UI with error handling
+local BMCX
+success, BMCX = pcall(function()
+    return lib.new("BCMX - Midnight Hub")
+end)
+
+if not success then
+    warn("Failed to create GUI")
+    return
 end
 
 -- Credits
-local credits = {
-    "Original script by Midnight Hub",
-    "Modified and enhanced version"
-}
-
-local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/GreenDeno/Venyx-UI-Library/main/source.lua"))()
-local WS = game.Workspace
-local LP = game.Players.LocalPlayer
-
--- Create main UI with credits
-local BMCX = lib.new("BCMX - Midnight Hub")
 local creditPage = BMCX:addPage("Credits", 5012544693)
 local creditSection = creditPage:addSection("Script Information")
-
-for _, credit in ipairs(credits) do
-    creditSection:addLabel(credit)
-end
+creditSection:addLabel("Original script by Midnight Hub")
+creditSection:addLabel("Modified and enhanced version")
 
 local M = BMCX:addPage("Main", 5012544693)
 local Exchanging = M:addSection("Exchanging")
@@ -32,17 +47,18 @@ local Cards = Tables:addSection("Tables & Cards")
 -- Exchanging
 local BitcoinMultiplier = 50
 local function SellBitcoin()
+    if not WS:FindFirstChild("Region_ExChang1") then return end
+    
     for i = 1, BitcoinMultiplier do
-        if WS:FindFirstChild("Region_ExChang1") then
-            WS["Region_ExChang1"]["Button"]["Clicked"]:FireServer(true)
+        local button = WS.Region_ExChang1:FindFirstChild("Button")
+        if button and button:FindFirstChild("Clicked") then
+            button.Clicked:FireServer(true)
         end
     end
 end
 
 local SBF = string.format("Exchange Bitcoins x%s", tostring(BitcoinMultiplier))
-local SellBitcoinB = Exchanging:addButton(SBF, function()
-    SellBitcoin()
-end)
+local SellBitcoinB = Exchanging:addButton(SBF, SellBitcoin)
 
 Exchanging:addSlider("Bitcoin Multiplier", 50, 50, 1000, function(v)
     BitcoinMultiplier = v
@@ -51,17 +67,18 @@ end)
 
 local SolarisMultiplier = 50
 local function SellSolaris()
+    if not WS:FindFirstChild("Region_ExChang1") then return end
+    
     for i = 1, SolarisMultiplier do
-        if WS:FindFirstChild("Region_ExChang1") then
-            WS["Region_ExChang1"]["Button"]["Clicked"]:FireServer(false)
+        local button = WS.Region_ExChang1:FindFirstChild("Button")
+        if button and button:FindFirstChild("Clicked") then
+            button.Clicked:FireServer(false)
         end
     end
 end
 
 local SLF = string.format("Exchange Solaris x%s", tostring(SolarisMultiplier))
-local SellSolarisB = Exchanging:addButton(SLF, function()
-    SellSolaris()
-end)
+local SellSolarisB = Exchanging:addButton(SLF, SellSolaris)
 
 Exchanging:addSlider("Solaris Multiplier", 50, 50, 1000, function(v)
     SolarisMultiplier = v
@@ -77,8 +94,10 @@ local function updateCharacterSpeed()
 end
 
 LP.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    updateCharacterSpeed()
+    local humanoid = char:WaitForChild("Humanoid", 10)
+    if humanoid then
+        updateCharacterSpeed()
+    end
 end)
 
 Player:addSlider("Walkspeed", 16, 16, 100, function(v)
@@ -87,8 +106,8 @@ Player:addSlider("Walkspeed", 16, 16, 100, function(v)
 end)
 
 Player:addButton("Remove Level Barriers", function()
-    for _, v in pairs(game.Workspace:GetChildren()) do
-        for _, child in pairs(v:GetChildren()) do
+    for _, v in ipairs(WS:GetChildren()) do
+        for _, child in ipairs(v:GetChildren()) do
             if child:FindFirstChildOfClass("TouchTransmitter") and child:FindFirstChildOfClass("SurfaceGui") then
                 child:Destroy()
             end
@@ -104,15 +123,26 @@ local ShelfNames = {
     ["Server Shelf"] = true
 }
 
-local Buildings = WS:WaitForChild("Buildings")[LP.Name]
-local PlaceCard = game:GetService("ReplicatedStorage").Events:FindFirstChild("PlaceCard")
-local BuyCard = game:GetService("ReplicatedStorage").Events:FindFirstChild("BuyCard")
+-- Wait for Buildings folder
+local Buildings
+local success = pcall(function()
+    Buildings = WS:WaitForChild("Buildings"):WaitForChild(LP.Name)
+end)
+
+if not success then
+    warn("Failed to find Buildings folder")
+    return
+end
+
+local PlaceCard = RS:WaitForChild("Events"):FindFirstChild("PlaceCard")
+local BuyCard = RS:WaitForChild("Events"):FindFirstChild("BuyCard")
 
 local function GetCard(CardName)
-    for _, v in pairs(WS:GetDescendants()) do
+    for _, v in ipairs(WS:GetDescendants()) do
         if v.Name == "Shows" then
-            for _, show in pairs(v:GetChildren()) do
-                if show:FindFirstChildOfClass("Model") and show:FindFirstChildOfClass("Model").Name == CardName then
+            for _, show in ipairs(v:GetChildren()) do
+                local model = show:FindFirstChildOfClass("Model")
+                if model and model.Name == CardName then
                     return show
                 end
             end
@@ -123,9 +153,9 @@ end
 
 local cardCount = 1
 local CardBuy = Cards:addTextbox("Buy 1 Card(s)", "Optix 900 Card", function(Card, Focus)
-    if Focus then
+    if Focus and Card ~= "" then
         local cardToBuy = GetCard(Card)
-        if cardToBuy then
+        if cardToBuy and BuyCard then
             BuyCard:FireServer(Card, cardToBuy, cardCount)
         end
     end
@@ -138,13 +168,14 @@ end)
 
 local maxShelves = 1
 local FillShelves = Cards:addTextbox("Fill 1 Shelves", "Optix 900 Card", function(Card, Focus)
-    if Focus and GetCard(Card) then
+    if Focus and Card ~= "" and GetCard(Card) and PlaceCard then
         local shelvesFilled = 0
-        for _, v in pairs(Buildings:GetChildren()) do
+        for _, v in ipairs(Buildings:GetChildren()) do
             if ShelfNames[v.Name] then
-                if shelvesFilled == maxShelves then return end
+                if shelvesFilled == maxShelves then break end
                 shelvesFilled = shelvesFilled + 1
-                for _, cardPlace in pairs(v.Cards:GetChildren()) do
+                
+                for _, cardPlace in ipairs(v.Cards:GetChildren()) do
                     if cardPlace.Name == "CardPlace" and not cardPlace:FindFirstChildOfClass("Model") then
                         PlaceCard:FireServer(Card, cardPlace)
                     end
@@ -160,9 +191,11 @@ Cards:addSlider("Amount of Shelves", 1, 1, 100, function(v)
 end)
 
 Cards:addButton("Remove All Cards From Shelves", function()
-    for _, v in pairs(Buildings:GetChildren()) do
+    if not PlaceCard then return end
+    
+    for _, v in ipairs(Buildings:GetChildren()) do
         if ShelfNames[v.Name] then
-            for _, cardPlace in pairs(v.Cards:GetChildren()) do
+            for _, cardPlace in ipairs(v.Cards:GetChildren()) do
                 if cardPlace.Name == "CardPlace" then
                     PlaceCard:FireServer(nil, cardPlace)
                 end
@@ -178,11 +211,18 @@ for shelfName, _ in pairs(ShelfNames) do
 end
 
 -- GUI Settings
-lib:SelectPage(creditPage, true) -- Show credits page first
+BMCX:SelectPage(M, true)
 local isToggled = true
-LP:GetMouse().KeyDown:Connect(function(K)
-    if K == "1" then
-        isToggled = not isToggled
-        BMCX:toggle(isToggled)
-    end
-end)
+
+-- Add keybind with error handling
+local function setupKeybind()
+    local mouse = LP:GetMouse()
+    mouse.KeyDown:Connect(function(K)
+        if K == "1" then
+            isToggled = not isToggled
+            BMCX:toggle(isToggled)
+        end
+    end)
+end
+
+pcall(setupKeybind)
