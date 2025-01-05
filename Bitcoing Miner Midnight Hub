@@ -1,184 +1,158 @@
--- Protection Bypass
-local function CreateInstance(cls,props)
-    local inst = Instance.new(cls)
-    for i,v in pairs(props) do
-        inst[i] = v
-    end
-    return inst
+-- Protection and Cleanup
+if game:GetService("CoreGui"):FindFirstChild("Orion") then 
+    game:GetService("CoreGui"):FindFirstChild("Orion"):Destroy()
 end
-    
-local ScreenGui = CreateInstance('ScreenGui',{DisplayOrder=0,Enabled=true,ResetOnSpawn=true,Name='ScreenGui', Parent=game.CoreGui})
-local Frame = CreateInstance('Frame',{Style=Enum.FrameStyle.Custom,Active=true,AnchorPoint=Vector2.new(0, 0),BackgroundColor3=Color3.new(0, 0, 0),BackgroundTransparency=0,BorderColor3=Color3.new(0.105882, 0.164706, 0.207843),BorderSizePixel=1,ClipsDescendants=false,Draggable=false,Position=UDim2.new(0.339118838, 0, 0.324749649, 0),Rotation=0,Selectable=false,Size=UDim2.new(0, 446, 0, 297),SizeConstraint=Enum.SizeConstraint.RelativeXY,Visible=true,ZIndex=1,Name = 'Frame',Parent = ScreenGui})
 
--- Core Variables
+-- Load Orion Library with protection
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+-- Create Window
+local Window = OrionLib:MakeWindow({
+    Name = "BCMX - Midnight Hub",
+    HidePremium = false,
+    SaveConfig = true,
+    IntroEnabled = true,
+    IntroText = "BCMX Loading...",
+    ConfigFolder = "BCMX"
+})
+
+-- Services
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-local Mouse = LP:GetMouse()
 
--- Anti-Detection
+-- Variables
+local BitcoinAmount = 50
+local AutoFarmEnabled = false
+
+-- Main Tab
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Main Section
+local ExchangeSection = MainTab:AddSection({
+    Name = "Exchange"
+})
+
+ExchangeSection:AddSlider({
+    Name = "Bitcoin Amount",
+    Min = 1,
+    Max = 1000,
+    Default = 50,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(Value)
+        BitcoinAmount = Value
+    end    
+})
+
+ExchangeSection:AddButton({
+    Name = "Exchange Bitcoin",
+    Callback = function()
+        for i = 1, BitcoinAmount do
+            RS.Events.ExchangeMoney:FireServer(true)
+            task.wait(0.1)
+        end
+    end    
+})
+
+ExchangeSection:AddToggle({
+    Name = "Auto Farm Bitcoin",
+    Default = false,
+    Callback = function(Value)
+        AutoFarmEnabled = Value
+        while AutoFarmEnabled do
+            RS.Events.ExchangeMoney:FireServer(true)
+            task.wait(0.1)
+        end
+    end    
+})
+
+-- Player Tab
+local PlayerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Player Section
+local PlayerSection = PlayerTab:AddSection({
+    Name = "Local Player"
+})
+
+PlayerSection:AddSlider({
+    Name = "Walk Speed",
+    Min = 16,
+    Max = 100,
+    Default = 16,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "",
+    Callback = function(Value)
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.WalkSpeed = Value
+        end
+    end    
+})
+
+PlayerSection:AddButton({
+    Name = "Remove Level Barriers",
+    Callback = function()
+        for _, v in pairs(game.Workspace:GetChildren()) do
+            for _, child in pairs(v:GetChildren()) do
+                if child:FindFirstChildOfClass("TouchTransmitter") and 
+                   child:FindFirstChildOfClass("SurfaceGui") then
+                    child:Destroy()
+                end
+            end
+        end
+    end    
+})
+
+-- Misc Tab
+local MiscTab = Window:MakeTab({
+    Name = "Misc",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Credits Section
+local CreditsSection = MiscTab:AddSection({
+    Name = "Credits"
+})
+
+CreditsSection:AddParagraph("Credits","Original script by Midnight Hub")
+CreditsSection:AddParagraph("Modified Version","Enhanced and modified version")
+
+-- Initialize
+OrionLib:Init()
+
+-- Notification when loaded
+OrionLib:MakeNotification({
+    Name = "Script Loaded",
+    Content = "BCMX is now ready to use!",
+    Image = "rbxassetid://4483345998",
+    Time = 5
+})
+
+-- Keep UI alive
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not game:GetService("CoreGui"):FindFirstChild("Orion") then
+        OrionLib:Init()
+    end
+end)
+
+-- Anti kick
 local OldNameCall = nil
 OldNameCall = hookmetamethod(game, "__namecall", function(...)
     local Args = {...}
     local Self = Args[1]
-    if getnamecallmethod() == "IsStudio" then
-        return false
+    if getnamecallmethod() == "Kick" then
+        return nil
     end
     return OldNameCall(...)
-end)
-
--- UI Library with error catching
-local Library = {}
-pcall(function()
-    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Shaman"))()
-end)
-
--- Main Window Creation with multiple fallbacks
-local Window = nil
-local attempts = 0
-local maxAttempts = 3
-
-while attempts < maxAttempts and Window == nil do
-    attempts = attempts + 1
-    pcall(function()
-        Window = Library:Window({
-            Name = "BCMX - Midnight Hub",
-            Themeable = {
-                Info = "By Midnight"
-            }
-        })
-    end)
-    if Window == nil then
-        wait(1)
-    end
-end
-
-if Window == nil then
-    -- Fallback to basic GUI if library fails
-    local BasicGui = Instance.new("ScreenGui")
-    local MainFrame = Instance.new("Frame")
-    local Title = Instance.new("TextLabel")
-    
-    BasicGui.Parent = game.CoreGui
-    BasicGui.Name = "BCMX_Fallback"
-    
-    MainFrame.Name = "MainFrame"
-    MainFrame.Parent = BasicGui
-    MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-    MainFrame.Size = UDim2.new(0, 300, 0, 200)
-    
-    Title.Name = "Title"
-    Title.Parent = MainFrame
-    Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Title.Size = UDim2.new(1, 0, 0, 30)
-    Title.Text = "BCMX - Basic Mode"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-end
-
--- Main Functions
-local function SellBitcoin(amount)
-    for i = 1, amount do
-        RS.Events.ExchangeMoney:FireServer(true)
-        task.wait(0.1)
-    end
-end
-
--- Main Tab
-local MainTab = Window:Tab({
-    Name = "Main"
-})
-
-MainTab:Button({
-    Name = "Exchange Bitcoin",
-    Callback = function()
-        SellBitcoin(50)
-    end
-})
-
-MainTab:Slider({
-    Name = "Bitcoin Amount",
-    Default = 50,
-    Min = 1,
-    Max = 1000,
-    Callback = function(Value)
-        _G.BitcoinAmount = Value
-    end
-})
-
--- Auto Farm Section
-MainTab:Toggle({
-    Name = "Auto Farm Bitcoin",
-    Default = false,
-    Callback = function(Value)
-        _G.AutoFarm = Value
-        while _G.AutoFarm do
-            SellBitcoin(_G.BitcoinAmount or 50)
-            task.wait(1)
-        end
-    end
-})
-
--- Create key bind for visibility toggle
-local function createKeybind()
-    local UIS = game:GetService("UserInputService")
-    UIS.InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.RightControl then
-            Window:Toggle()
-        end
-    end)
-end
-pcall(createKeybind)
-
--- Protection Features
-local function applyProtection()
-    setreadonly(getrawmetatable(game), false)
-    local mt = getrawmetatable(game)
-    local old_index = mt.__index
-    
-    mt.__index = newcclosure(function(t, k)
-        if k == "Parent" and not checkcaller() then
-            return game.CoreGui
-        end
-        return old_index(t, k)
-    end)
-end
-pcall(applyProtection)
-
--- Secure GUI parenting with multiple fallback methods
-local function secureGuiParent()
-    local success = pcall(function()
-        if syn then
-            syn.protect_gui(ScreenGui)
-        end
-    end)
-    
-    if not success then
-        pcall(function()
-            ScreenGui.Parent = game:GetService("CoreGui")
-        end)
-    end
-end
-pcall(secureGuiParent)
-
--- Notification system
-local function notify(title, text, duration)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = title,
-            Text = text,
-            Duration = duration or 5
-        })
-    end)
-end
-
-notify("Script Loaded", "Press Right Control to toggle GUI", 5)
-
--- Keep GUI alive
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not ScreenGui.Parent then
-        pcall(function()
-            ScreenGui.Parent = game:GetService("CoreGui")
-        end)
-    end
 end)
