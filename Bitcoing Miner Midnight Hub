@@ -1,0 +1,188 @@
+if game.CoreGui:FindFirstChild("BCMX") then
+    game.CoreGui:FindFirstChild("BCMX"):Destroy()
+end
+
+-- Credits
+local credits = {
+    "Original script by Midnight Hub",
+    "Modified and enhanced version"
+}
+
+local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/GreenDeno/Venyx-UI-Library/main/source.lua"))()
+local WS = game.Workspace
+local LP = game.Players.LocalPlayer
+
+-- Create main UI with credits
+local BMCX = lib.new("BCMX - Midnight Hub")
+local creditPage = BMCX:addPage("Credits", 5012544693)
+local creditSection = creditPage:addSection("Script Information")
+
+for _, credit in ipairs(credits) do
+    creditSection:addLabel(credit)
+end
+
+local M = BMCX:addPage("Main", 5012544693)
+local Exchanging = M:addSection("Exchanging")
+local Player = M:addSection("Player")
+
+local Tables = BMCX:addPage("Plot", 5012544693)
+local Shelves = Tables:addSection("Shelves")
+local Cards = Tables:addSection("Tables & Cards")
+
+-- Exchanging
+local BitcoinMultiplier = 50
+local function SellBitcoin()
+    for i = 1, BitcoinMultiplier do
+        if WS:FindFirstChild("Region_ExChang1") then
+            WS["Region_ExChang1"]["Button"]["Clicked"]:FireServer(true)
+        end
+    end
+end
+
+local SBF = string.format("Exchange Bitcoins x%s", tostring(BitcoinMultiplier))
+local SellBitcoinB = Exchanging:addButton(SBF, function()
+    SellBitcoin()
+end)
+
+Exchanging:addSlider("Bitcoin Multiplier", 50, 50, 1000, function(v)
+    BitcoinMultiplier = v
+    Exchanging:updateButton(SellBitcoinB, string.format("Exchange Bitcoins x%s", tostring(BitcoinMultiplier)))
+end)
+
+local SolarisMultiplier = 50
+local function SellSolaris()
+    for i = 1, SolarisMultiplier do
+        if WS:FindFirstChild("Region_ExChang1") then
+            WS["Region_ExChang1"]["Button"]["Clicked"]:FireServer(false)
+        end
+    end
+end
+
+local SLF = string.format("Exchange Solaris x%s", tostring(SolarisMultiplier))
+local SellSolarisB = Exchanging:addButton(SLF, function()
+    SellSolaris()
+end)
+
+Exchanging:addSlider("Solaris Multiplier", 50, 50, 1000, function(v)
+    SolarisMultiplier = v
+    Exchanging:updateButton(SellSolarisB, string.format("Exchange Solaris x%s", tostring(SolarisMultiplier)))
+end)
+
+-- Player movement and settings
+local WalkSpeed = 16
+local function updateCharacterSpeed()
+    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+        LP.Character.Humanoid.WalkSpeed = WalkSpeed
+    end
+end
+
+LP.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid")
+    updateCharacterSpeed()
+end)
+
+Player:addSlider("Walkspeed", 16, 16, 100, function(v)
+    WalkSpeed = v
+    updateCharacterSpeed()
+end)
+
+Player:addButton("Remove Level Barriers", function()
+    for _, v in pairs(game.Workspace:GetChildren()) do
+        for _, child in pairs(v:GetChildren()) do
+            if child:FindFirstChildOfClass("TouchTransmitter") and child:FindFirstChildOfClass("SurfaceGui") then
+                child:Destroy()
+            end
+        end
+    end
+end)
+
+-- Tables & Cards
+local ShelfNames = {
+    ["Table"] = true,
+    ["Double Shelf"] = true,
+    ["Triple Shelf"] = true,
+    ["Server Shelf"] = true
+}
+
+local Buildings = WS:WaitForChild("Buildings")[LP.Name]
+local PlaceCard = game:GetService("ReplicatedStorage").Events:FindFirstChild("PlaceCard")
+local BuyCard = game:GetService("ReplicatedStorage").Events:FindFirstChild("BuyCard")
+
+local function GetCard(CardName)
+    for _, v in pairs(WS:GetDescendants()) do
+        if v.Name == "Shows" then
+            for _, show in pairs(v:GetChildren()) do
+                if show:FindFirstChildOfClass("Model") and show:FindFirstChildOfClass("Model").Name == CardName then
+                    return show
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local cardCount = 1
+local CardBuy = Cards:addTextbox("Buy 1 Card(s)", "Optix 900 Card", function(Card, Focus)
+    if Focus then
+        local cardToBuy = GetCard(Card)
+        if cardToBuy then
+            BuyCard:FireServer(Card, cardToBuy, cardCount)
+        end
+    end
+end)
+
+Cards:addSlider("Amount of Cards", 1, 1, 100, function(v)
+    cardCount = v
+    Cards:updateButton(CardBuy, string.format("Buy %s Card(s)", tostring(cardCount)))
+end)
+
+local maxShelves = 1
+local FillShelves = Cards:addTextbox("Fill 1 Shelves", "Optix 900 Card", function(Card, Focus)
+    if Focus and GetCard(Card) then
+        local shelvesFilled = 0
+        for _, v in pairs(Buildings:GetChildren()) do
+            if ShelfNames[v.Name] then
+                if shelvesFilled == maxShelves then return end
+                shelvesFilled = shelvesFilled + 1
+                for _, cardPlace in pairs(v.Cards:GetChildren()) do
+                    if cardPlace.Name == "CardPlace" and not cardPlace:FindFirstChildOfClass("Model") then
+                        PlaceCard:FireServer(Card, cardPlace)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+Cards:addSlider("Amount of Shelves", 1, 1, 100, function(v)
+    maxShelves = v
+    Cards:updateButton(FillShelves, string.format("Fill %s Shelves", tostring(maxShelves)))
+end)
+
+Cards:addButton("Remove All Cards From Shelves", function()
+    for _, v in pairs(Buildings:GetChildren()) do
+        if ShelfNames[v.Name] then
+            for _, cardPlace in pairs(v.Cards:GetChildren()) do
+                if cardPlace.Name == "CardPlace" then
+                    PlaceCard:FireServer(nil, cardPlace)
+                end
+            end
+        end
+    end
+end)
+
+for shelfName, _ in pairs(ShelfNames) do
+    Shelves:addToggle(shelfName, true, function(b)
+        ShelfNames[shelfName] = b
+    end)
+end
+
+-- GUI Settings
+lib:SelectPage(creditPage, true) -- Show credits page first
+local isToggled = true
+LP:GetMouse().KeyDown:Connect(function(K)
+    if K == "1" then
+        isToggled = not isToggled
+        BMCX:toggle(isToggled)
+    end
+end)
