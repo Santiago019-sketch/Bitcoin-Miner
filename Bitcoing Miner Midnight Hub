@@ -1,191 +1,184 @@
--- Remove existing GUI
-if game:GetService("CoreGui"):FindFirstChild("BCMX") then
-    game:GetService("CoreGui"):FindFirstChild("BCMX"):Destroy()
+-- Protection Bypass
+local function CreateInstance(cls,props)
+    local inst = Instance.new(cls)
+    for i,v in pairs(props) do
+        inst[i] = v
+    end
+    return inst
 end
+    
+local ScreenGui = CreateInstance('ScreenGui',{DisplayOrder=0,Enabled=true,ResetOnSpawn=true,Name='ScreenGui', Parent=game.CoreGui})
+local Frame = CreateInstance('Frame',{Style=Enum.FrameStyle.Custom,Active=true,AnchorPoint=Vector2.new(0, 0),BackgroundColor3=Color3.new(0, 0, 0),BackgroundTransparency=0,BorderColor3=Color3.new(0.105882, 0.164706, 0.207843),BorderSizePixel=1,ClipsDescendants=false,Draggable=false,Position=UDim2.new(0.339118838, 0, 0.324749649, 0),Rotation=0,Selectable=false,Size=UDim2.new(0, 446, 0, 297),SizeConstraint=Enum.SizeConstraint.RelativeXY,Visible=true,ZIndex=1,Name = 'Frame',Parent = ScreenGui})
 
--- Load Rayfield UI Library (more stable)
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
-
--- Create Window
-local Window = Rayfield:CreateWindow({
-    Name = "BCMX - Midnight Hub",
-    LoadingTitle = "Loading BCMX...",
-    LoadingSubtitle = "by Midnight Hub",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "BCMX",
-        FileName = "Config"
-    }
-})
-
--- Services
+-- Core Variables
 local RS = game:GetService("ReplicatedStorage")
-local LP = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local Mouse = LP:GetMouse()
 
--- Variables
-local BitcoinMultiplier = 50
-local SolarisMultiplier = 50
+-- Anti-Detection
+local OldNameCall = nil
+OldNameCall = hookmetamethod(game, "__namecall", function(...)
+    local Args = {...}
+    local Self = Args[1]
+    if getnamecallmethod() == "IsStudio" then
+        return false
+    end
+    return OldNameCall(...)
+end)
 
--- Tabs
-local MainTab = Window:CreateTab("Main", 4483345998)
-local PlotTab = Window:CreateTab("Plot", 4483345998)
+-- UI Library with error catching
+local Library = {}
+pcall(function()
+    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/Shaman"))()
+end)
 
--- Bitcoin Exchange Function (Updated with correct remote)
-local function SellBitcoin()
-    for i = 1, BitcoinMultiplier do
+-- Main Window Creation with multiple fallbacks
+local Window = nil
+local attempts = 0
+local maxAttempts = 3
+
+while attempts < maxAttempts and Window == nil do
+    attempts = attempts + 1
+    pcall(function()
+        Window = Library:Window({
+            Name = "BCMX - Midnight Hub",
+            Themeable = {
+                Info = "By Midnight"
+            }
+        })
+    end)
+    if Window == nil then
+        wait(1)
+    end
+end
+
+if Window == nil then
+    -- Fallback to basic GUI if library fails
+    local BasicGui = Instance.new("ScreenGui")
+    local MainFrame = Instance.new("Frame")
+    local Title = Instance.new("TextLabel")
+    
+    BasicGui.Parent = game.CoreGui
+    BasicGui.Name = "BCMX_Fallback"
+    
+    MainFrame.Name = "MainFrame"
+    MainFrame.Parent = BasicGui
+    MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+    MainFrame.Size = UDim2.new(0, 300, 0, 200)
+    
+    Title.Name = "Title"
+    Title.Parent = MainFrame
+    Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.Text = "BCMX - Basic Mode"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+end
+
+-- Main Functions
+local function SellBitcoin(amount)
+    for i = 1, amount do
         RS.Events.ExchangeMoney:FireServer(true)
-        task.wait(0.1) -- Small delay to prevent overflow
+        task.wait(0.1)
     end
 end
 
--- Solaris Exchange Function
-local function SellSolaris()
-    for i = 1, SolarisMultiplier do
-        RS.Events.ExchangeMoney:FireServer(false)
-        task.wait(0.1) -- Small delay to prevent overflow
-    end
-end
-
--- Main Tab Elements
-MainTab:CreateSection("Auto Exchange")
-
-MainTab:CreateSlider({
-    Name = "Bitcoin Multiplier",
-    Range = {1, 1000},
-    Increment = 1,
-    Suffix = "x",
-    CurrentValue = 50,
-    Flag = "BitcoinMultiplier",
-    Callback = function(Value)
-        BitcoinMultiplier = Value
-    end,
+-- Main Tab
+local MainTab = Window:Tab({
+    Name = "Main"
 })
 
-MainTab:CreateButton({
+MainTab:Button({
     Name = "Exchange Bitcoin",
     Callback = function()
-        SellBitcoin()
-    end,
+        SellBitcoin(50)
+    end
 })
 
-MainTab:CreateSlider({
-    Name = "Solaris Multiplier",
-    Range = {1, 1000},
-    Increment = 1,
-    Suffix = "x",
-    CurrentValue = 50,
-    Flag = "SolarisMultiplier",
+MainTab:Slider({
+    Name = "Bitcoin Amount",
+    Default = 50,
+    Min = 1,
+    Max = 1000,
     Callback = function(Value)
-        SolarisMultiplier = Value
-    end,
-})
-
-MainTab:CreateButton({
-    Name = "Exchange Solaris",
-    Callback = function()
-        SellSolaris()
-    end,
+        _G.BitcoinAmount = Value
+    end
 })
 
 -- Auto Farm Section
-MainTab:CreateSection("Auto Farm")
-
-local autoFarmEnabled = false
-MainTab:CreateToggle({
-    Name = "Auto Exchange Bitcoin",
-    CurrentValue = false,
-    Flag = "AutoFarmBitcoin",
+MainTab:Toggle({
+    Name = "Auto Farm Bitcoin",
+    Default = false,
     Callback = function(Value)
-        autoFarmEnabled = Value
-        while autoFarmEnabled do
-            SellBitcoin()
-            task.wait(1) -- Wait 1 second between cycles
+        _G.AutoFarm = Value
+        while _G.AutoFarm do
+            SellBitcoin(_G.BitcoinAmount or 50)
+            task.wait(1)
         end
-    end,
+    end
 })
 
--- Player Section
-MainTab:CreateSection("Player")
-
-MainTab:CreateSlider({
-    Name = "Walk Speed",
-    Range = {16, 100},
-    Increment = 1,
-    Suffix = "speed",
-    CurrentValue = 16,
-    Flag = "WalkSpeed",
-    Callback = function(Value)
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.WalkSpeed = Value
-        end
-    end,
-})
-
-MainTab:CreateButton({
-    Name = "Remove Level Barriers",
-    Callback = function()
-        for _, v in pairs(game.Workspace:GetChildren()) do
-            for _, child in pairs(v:GetChildren()) do
-                if child:FindFirstChildOfClass("TouchTransmitter") and child:FindFirstChildOfClass("SurfaceGui") then
-                    child:Destroy()
-                end
-            end
-        end
-    end,
-})
-
--- Plot Tab
-local ShelfNames = {
-    ["Table"] = true,
-    ["Double Shelf"] = true,
-    ["Triple Shelf"] = true,
-    ["Server Shelf"] = true
-}
-
--- Add shelf toggles
-PlotTab:CreateSection("Shelf Management")
-
-for shelfName, _ in pairs(ShelfNames) do
-    PlotTab:CreateToggle({
-        Name = shelfName,
-        CurrentValue = true,
-        Flag = "Shelf_" .. shelfName,
-        Callback = function(Value)
-            ShelfNames[shelfName] = Value
-        end,
-    })
-end
-
--- Card Management
-PlotTab:CreateSection("Card Management")
-
-local cardCount = 1
-PlotTab:CreateSlider({
-    Name = "Card Amount",
-    Range = {1, 100},
-    Increment = 1,
-    Suffix = "cards",
-    CurrentValue = 1,
-    Flag = "CardAmount",
-    Callback = function(Value)
-        cardCount = Value
-    end,
-})
-
--- Notification on load
-Rayfield:Notify({
-    Title = "Script Loaded",
-    Content = "BCMX is ready to use",
-    Duration = 3,
-})
-
--- Set keybind to toggle UI
-local function SetupKeybind()
-    game:GetService("UserInputService").InputBegan:Connect(function(input)
+-- Create key bind for visibility toggle
+local function createKeybind()
+    local UIS = game:GetService("UserInputService")
+    UIS.InputBegan:Connect(function(input)
         if input.KeyCode == Enum.KeyCode.RightControl then
-            Rayfield:ToggleUI()
+            Window:Toggle()
         end
     end)
 end
+pcall(createKeybind)
 
-pcall(SetupKeybind)
+-- Protection Features
+local function applyProtection()
+    setreadonly(getrawmetatable(game), false)
+    local mt = getrawmetatable(game)
+    local old_index = mt.__index
+    
+    mt.__index = newcclosure(function(t, k)
+        if k == "Parent" and not checkcaller() then
+            return game.CoreGui
+        end
+        return old_index(t, k)
+    end)
+end
+pcall(applyProtection)
+
+-- Secure GUI parenting with multiple fallback methods
+local function secureGuiParent()
+    local success = pcall(function()
+        if syn then
+            syn.protect_gui(ScreenGui)
+        end
+    end)
+    
+    if not success then
+        pcall(function()
+            ScreenGui.Parent = game:GetService("CoreGui")
+        end)
+    end
+end
+pcall(secureGuiParent)
+
+-- Notification system
+local function notify(title, text, duration)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 5
+        })
+    end)
+end
+
+notify("Script Loaded", "Press Right Control to toggle GUI", 5)
+
+-- Keep GUI alive
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not ScreenGui.Parent then
+        pcall(function()
+            ScreenGui.Parent = game:GetService("CoreGui")
+        end)
+    end
+end)
