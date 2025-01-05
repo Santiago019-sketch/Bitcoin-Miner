@@ -1,158 +1,109 @@
--- Protection and Cleanup
-if game:GetService("CoreGui"):FindFirstChild("Orion") then 
-    game:GetService("CoreGui"):FindFirstChild("Orion"):Destroy()
+-- Cleanup any existing GUI
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("BCMX Hub") then
+    CoreGui:FindFirstChild("BCMX Hub"):Destroy()
 end
 
--- Load Orion Library with protection
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+-- Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Create Window
-local Window = OrionLib:MakeWindow({
-    Name = "BCMX - Midnight Hub",
-    HidePremium = false,
-    SaveConfig = true,
-    IntroEnabled = true,
-    IntroText = "BCMX Loading...",
-    ConfigFolder = "BCMX"
-})
+local Window = Library.CreateLib("BCMX Hub", "DarkTheme")
 
 -- Services
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
--- Variables
-local BitcoinAmount = 50
-local AutoFarmEnabled = false
-
 -- Main Tab
-local MainTab = Window:MakeTab({
-    Name = "Main",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local MainTab = Window:NewTab("Main")
+local MainSection = MainTab:NewSection("Auto Farm")
 
--- Main Section
-local ExchangeSection = MainTab:AddSection({
-    Name = "Exchange"
-})
+-- Variables
+local AutoEnabled = false
+local BitcoinAmount = 50
 
-ExchangeSection:AddSlider({
-    Name = "Bitcoin Amount",
-    Min = 1,
-    Max = 1000,
-    Default = 50,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 1,
-    ValueName = "",
-    Callback = function(Value)
-        BitcoinAmount = Value
-    end    
-})
+-- Bitcoin Functions
+MainSection:NewToggle("Auto Bitcoin", "Automatically exchanges Bitcoin", function(state)
+    AutoEnabled = state
+    while AutoEnabled do
+        RS.Events.ExchangeMoney:FireServer(true)
+        task.wait(0.1)
+    end
+end)
 
-ExchangeSection:AddButton({
-    Name = "Exchange Bitcoin",
-    Callback = function()
-        for i = 1, BitcoinAmount do
-            RS.Events.ExchangeMoney:FireServer(true)
-            task.wait(0.1)
-        end
-    end    
-})
+MainSection:NewSlider("Exchange Amount", "Amount of Bitcoin to exchange", 1000, 1, function(v)
+    BitcoinAmount = v
+end)
 
-ExchangeSection:AddToggle({
-    Name = "Auto Farm Bitcoin",
-    Default = false,
-    Callback = function(Value)
-        AutoFarmEnabled = Value
-        while AutoFarmEnabled do
-            RS.Events.ExchangeMoney:FireServer(true)
-            task.wait(0.1)
-        end
-    end    
-})
+MainSection:NewButton("Exchange Bitcoin", "Exchange Bitcoin once", function()
+    for i = 1, BitcoinAmount do
+        RS.Events.ExchangeMoney:FireServer(true)
+        task.wait(0.1)
+    end
+end)
 
 -- Player Tab
-local PlayerTab = Window:MakeTab({
-    Name = "Player",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
+local PlayerTab = Window:NewTab("Player")
+local PlayerSection = PlayerTab:NewSection("Local Player")
 
--- Player Section
-local PlayerSection = PlayerTab:AddSection({
-    Name = "Local Player"
-})
-
-PlayerSection:AddSlider({
-    Name = "Walk Speed",
-    Min = 16,
-    Max = 100,
-    Default = 16,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 1,
-    ValueName = "",
-    Callback = function(Value)
-        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.WalkSpeed = Value
-        end
-    end    
-})
-
-PlayerSection:AddButton({
-    Name = "Remove Level Barriers",
-    Callback = function()
-        for _, v in pairs(game.Workspace:GetChildren()) do
-            for _, child in pairs(v:GetChildren()) do
-                if child:FindFirstChildOfClass("TouchTransmitter") and 
-                   child:FindFirstChildOfClass("SurfaceGui") then
-                    child:Destroy()
-                end
-            end
-        end
-    end    
-})
-
--- Misc Tab
-local MiscTab = Window:MakeTab({
-    Name = "Misc",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Credits Section
-local CreditsSection = MiscTab:AddSection({
-    Name = "Credits"
-})
-
-CreditsSection:AddParagraph("Credits","Original script by Midnight Hub")
-CreditsSection:AddParagraph("Modified Version","Enhanced and modified version")
-
--- Initialize
-OrionLib:Init()
-
--- Notification when loaded
-OrionLib:MakeNotification({
-    Name = "Script Loaded",
-    Content = "BCMX is now ready to use!",
-    Image = "rbxassetid://4483345998",
-    Time = 5
-})
-
--- Keep UI alive
-game:GetService("RunService").RenderStepped:Connect(function()
-    if not game:GetService("CoreGui"):FindFirstChild("Orion") then
-        OrionLib:Init()
+-- Walk Speed
+PlayerSection:NewSlider("Walk Speed", "Changes your walk speed", 100, 16, function(v)
+    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+        LP.Character.Humanoid.WalkSpeed = v
     end
 end)
 
--- Anti kick
-local OldNameCall = nil
-OldNameCall = hookmetamethod(game, "__namecall", function(...)
-    local Args = {...}
-    local Self = Args[1]
+-- Remove Barriers
+PlayerSection:NewButton("Remove Barriers", "Removes level barriers", function()
+    for _, v in pairs(workspace:GetChildren()) do
+        if v:FindFirstChildOfClass("TouchTransmitter") and v:FindFirstChildOfClass("SurfaceGui") then
+            v:Destroy()
+        end
+    end
+end)
+
+-- Credits Tab
+local CreditsTab = Window:NewTab("Credits")
+local CreditsSection = CreditsTab:NewSection("Credits")
+
+CreditsSection:NewLabel("Original by Midnight Hub")
+CreditsSection:NewLabel("Modified Version")
+
+-- Protection
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(...)
+    local args = {...}
     if getnamecallmethod() == "Kick" then
-        return nil
+        return
     end
-    return OldNameCall(...)
+    return old(...)
 end)
+setreadonly(mt, true)
+
+-- Keep UI Elements Updated
+game:GetService("RunService").RenderStepped:Connect(function()
+    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+        -- Keep WalkSpeed Updated
+        if _G.WalkSpeedValue then
+            LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
+        end
+    end
+end)
+
+-- Keybinds
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightShift then  -- Right Shift to toggle UI
+        Library:ToggleUI()
+    end
+end)
+
+-- Notification
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "BCMX Hub Loaded",
+    Text = "Press Right-Shift to toggle",
+    Duration = 5
+})
