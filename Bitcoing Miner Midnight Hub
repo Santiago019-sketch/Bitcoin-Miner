@@ -1,143 +1,140 @@
--- Remove existing GUI if present
+-- Remove existing GUI
 if game:GetService("CoreGui"):FindFirstChild("BCMX") then
     game:GetService("CoreGui"):FindFirstChild("BCMX"):Destroy()
 end
 
--- Load Orion Library
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+-- Load Rayfield UI Library (more stable)
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
--- Create window with error handling
-local Window = OrionLib:MakeWindow({
-    Name = "BCMX - Midnight Hub", 
-    HidePremium = false,
-    SaveConfig = true, 
-    ConfigFolder = "BCMX"
+-- Create Window
+local Window = Rayfield:CreateWindow({
+    Name = "BCMX - Midnight Hub",
+    LoadingTitle = "Loading BCMX...",
+    LoadingSubtitle = "by Midnight Hub",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BCMX",
+        FileName = "Config"
+    }
 })
 
 -- Services
-local WS = game:GetService("Workspace")
-local LP = game:GetService("Players").LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
-
--- Create tabs
-local CreditsTab = Window:MakeTab({
-    Name = "Credits",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local MainTab = Window:MakeTab({
-    Name = "Main",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local PlotTab = Window:MakeTab({
-    Name = "Plot",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- Add credits
-CreditsTab:AddParagraph("Script Information","Original script by Midnight Hub\nModified and enhanced version")
+local LP = game:GetService("Players").LocalPlayer
 
 -- Variables
 local BitcoinMultiplier = 50
 local SolarisMultiplier = 50
-local WalkSpeed = 16
 
--- Exchanging Section
-MainTab:AddSlider({
+-- Tabs
+local MainTab = Window:CreateTab("Main", 4483345998)
+local PlotTab = Window:CreateTab("Plot", 4483345998)
+
+-- Bitcoin Exchange Function (Updated with correct remote)
+local function SellBitcoin()
+    for i = 1, BitcoinMultiplier do
+        RS.Events.ExchangeMoney:FireServer(true)
+        task.wait(0.1) -- Small delay to prevent overflow
+    end
+end
+
+-- Solaris Exchange Function
+local function SellSolaris()
+    for i = 1, SolarisMultiplier do
+        RS.Events.ExchangeMoney:FireServer(false)
+        task.wait(0.1) -- Small delay to prevent overflow
+    end
+end
+
+-- Main Tab Elements
+MainTab:CreateSection("Auto Exchange")
+
+MainTab:CreateSlider({
     Name = "Bitcoin Multiplier",
-    Min = 50,
-    Max = 1000,
-    Default = 50,
-    Color = Color3.fromRGB(255,255,255),
+    Range = {1, 1000},
     Increment = 1,
-    ValueName = "x",
+    Suffix = "x",
+    CurrentValue = 50,
+    Flag = "BitcoinMultiplier",
     Callback = function(Value)
         BitcoinMultiplier = Value
-    end    
+    end,
 })
 
-MainTab:AddButton({
-    Name = "Exchange Bitcoins",
+MainTab:CreateButton({
+    Name = "Exchange Bitcoin",
     Callback = function()
-        if not WS:FindFirstChild("Region_ExChang1") then return end
-        for i = 1, BitcoinMultiplier do
-            local button = WS.Region_ExChang1:FindFirstChild("Button")
-            if button and button:FindFirstChild("Clicked") then
-                button.Clicked:FireServer(true)
-            end
-        end
-    end    
+        SellBitcoin()
+    end,
 })
 
-MainTab:AddSlider({
+MainTab:CreateSlider({
     Name = "Solaris Multiplier",
-    Min = 50,
-    Max = 1000,
-    Default = 50,
-    Color = Color3.fromRGB(255,255,255),
+    Range = {1, 1000},
     Increment = 1,
-    ValueName = "x",
+    Suffix = "x",
+    CurrentValue = 50,
+    Flag = "SolarisMultiplier",
     Callback = function(Value)
         SolarisMultiplier = Value
-    end    
+    end,
 })
 
-MainTab:AddButton({
+MainTab:CreateButton({
     Name = "Exchange Solaris",
     Callback = function()
-        if not WS:FindFirstChild("Region_ExChang1") then return end
-        for i = 1, SolarisMultiplier do
-            local button = WS.Region_ExChang1:FindFirstChild("Button")
-            if button and button:FindFirstChild("Clicked") then
-                button.Clicked:FireServer(false)
-            end
+        SellSolaris()
+    end,
+})
+
+-- Auto Farm Section
+MainTab:CreateSection("Auto Farm")
+
+local autoFarmEnabled = false
+MainTab:CreateToggle({
+    Name = "Auto Exchange Bitcoin",
+    CurrentValue = false,
+    Flag = "AutoFarmBitcoin",
+    Callback = function(Value)
+        autoFarmEnabled = Value
+        while autoFarmEnabled do
+            SellBitcoin()
+            task.wait(1) -- Wait 1 second between cycles
         end
-    end    
+    end,
 })
 
 -- Player Section
-MainTab:AddSlider({
-    Name = "Walkspeed",
-    Min = 16,
-    Max = 100,
-    Default = 16,
-    Color = Color3.fromRGB(255,255,255),
+MainTab:CreateSection("Player")
+
+MainTab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 100},
     Increment = 1,
-    ValueName = "",
+    Suffix = "speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
     Callback = function(Value)
-        WalkSpeed = Value
         if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.WalkSpeed = WalkSpeed
+            LP.Character.Humanoid.WalkSpeed = Value
         end
-    end    
+    end,
 })
 
--- Update walkspeed on character spawn
-LP.CharacterAdded:Connect(function(char)
-    local humanoid = char:WaitForChild("Humanoid", 10)
-    if humanoid then
-        humanoid.WalkSpeed = WalkSpeed
-    end
-end)
-
-MainTab:AddButton({
+MainTab:CreateButton({
     Name = "Remove Level Barriers",
     Callback = function()
-        for _, v in ipairs(WS:GetChildren()) do
-            for _, child in ipairs(v:GetChildren()) do
+        for _, v in pairs(game.Workspace:GetChildren()) do
+            for _, child in pairs(v:GetChildren()) do
                 if child:FindFirstChildOfClass("TouchTransmitter") and child:FindFirstChildOfClass("SurfaceGui") then
                     child:Destroy()
                 end
             end
         end
-    end    
+    end,
 })
 
--- Tables & Cards Section
+-- Plot Tab
 local ShelfNames = {
     ["Table"] = true,
     ["Double Shelf"] = true,
@@ -145,125 +142,50 @@ local ShelfNames = {
     ["Server Shelf"] = true
 }
 
-local Buildings = WS:WaitForChild("Buildings", 10):WaitForChild(LP.Name, 10)
-local PlaceCard = RS:WaitForChild("Events", 10):FindFirstChild("PlaceCard")
-local BuyCard = RS:WaitForChild("Events", 10):FindFirstChild("BuyCard")
+-- Add shelf toggles
+PlotTab:CreateSection("Shelf Management")
 
-local function GetCard(CardName)
-    for _, v in ipairs(WS:GetDescendants()) do
-        if v.Name == "Shows" then
-            for _, show in ipairs(v:GetChildren()) do
-                local model = show:FindFirstChildOfClass("Model")
-                if model and model.Name == CardName then
-                    return show
-                end
-            end
-        end
-    end
-    return nil
-end
-
--- Card buying
-local cardCount = 1
-PlotTab:AddTextbox({
-    Name = "Card Name",
-    Default = "Optix 900 Card",
-    TextDisappear = false,
-    Callback = function(CardName)
-        if CardName ~= "" then
-            local cardToBuy = GetCard(CardName)
-            if cardToBuy and BuyCard then
-                BuyCard:FireServer(CardName, cardToBuy, cardCount)
-            end
-        end
-    end	  
-})
-
-PlotTab:AddSlider({
-    Name = "Card Amount",
-    Min = 1,
-    Max = 100,
-    Default = 1,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 1,
-    ValueName = "",
-    Callback = function(Value)
-        cardCount = Value
-    end    
-})
-
--- Shelf management
-local maxShelves = 1
-PlotTab:AddTextbox({
-    Name = "Fill Shelves with Card",
-    Default = "Optix 900 Card",
-    TextDisappear = false,
-    Callback = function(CardName)
-        if CardName ~= "" and GetCard(CardName) and PlaceCard then
-            local shelvesFilled = 0
-            for _, v in ipairs(Buildings:GetChildren()) do
-                if ShelfNames[v.Name] then
-                    if shelvesFilled == maxShelves then break end
-                    shelvesFilled = shelvesFilled + 1
-                    
-                    for _, cardPlace in ipairs(v.Cards:GetChildren()) do
-                        if cardPlace.Name == "CardPlace" and not cardPlace:FindFirstChildOfClass("Model") then
-                            PlaceCard:FireServer(CardName, cardPlace)
-                        end
-                    end
-                end
-            end
-        end
-    end	  
-})
-
-PlotTab:AddSlider({
-    Name = "Shelves Amount",
-    Min = 1,
-    Max = 100,
-    Default = 1,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 1,
-    ValueName = "",
-    Callback = function(Value)
-        maxShelves = Value
-    end    
-})
-
-PlotTab:AddButton({
-    Name = "Remove All Cards",
-    Callback = function()
-        if not PlaceCard then return end
-        for _, v in ipairs(Buildings:GetChildren()) do
-            if ShelfNames[v.Name] then
-                for _, cardPlace in ipairs(v.Cards:GetChildren()) do
-                    if cardPlace.Name == "CardPlace" then
-                        PlaceCard:FireServer(nil, cardPlace)
-                    end
-                end
-            end
-        end
-    end    
-})
-
--- Shelf toggles
 for shelfName, _ in pairs(ShelfNames) do
-    PlotTab:AddToggle({
+    PlotTab:CreateToggle({
         Name = shelfName,
-        Default = true,
+        CurrentValue = true,
+        Flag = "Shelf_" .. shelfName,
         Callback = function(Value)
             ShelfNames[shelfName] = Value
-        end    
+        end,
     })
 end
 
--- Initialize
-OrionLib:Init()
+-- Card Management
+PlotTab:CreateSection("Card Management")
 
--- Notify user that script has loaded
-OrionLib:MakeNotification({
-    Name = "Script Loaded",
-    Content = "BCMX - Midnight Hub is now ready",
-    Image = "rbxassetid://4483345998",
-    Time = 5
+local cardCount = 1
+PlotTab:CreateSlider({
+    Name = "Card Amount",
+    Range = {1, 100},
+    Increment = 1,
+    Suffix = "cards",
+    CurrentValue = 1,
+    Flag = "CardAmount",
+    Callback = function(Value)
+        cardCount = Value
+    end,
 })
+
+-- Notification on load
+Rayfield:Notify({
+    Title = "Script Loaded",
+    Content = "BCMX is ready to use",
+    Duration = 3,
+})
+
+-- Set keybind to toggle UI
+local function SetupKeybind()
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.RightControl then
+            Rayfield:ToggleUI()
+        end
+    end)
+end
+
+pcall(SetupKeybind)
