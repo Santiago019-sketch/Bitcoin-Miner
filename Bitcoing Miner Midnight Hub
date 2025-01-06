@@ -9,7 +9,6 @@ local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local VirtualUser = game:GetService('VirtualUser')
-local TweenService = game:GetService("TweenService")
 
 -- Config
 local Config = {
@@ -18,11 +17,11 @@ local Config = {
     ExchangeDelay = 0.1,
     AutoCrystalTP = false,
     AutoExchangeEnabled = false,
-    AutoMineEnabled = false,
-    AutoUpgradeEnabled = false
+    AutoUpgradeEnabled = false,
+    AutoMineEnabled = false
 }
 
--- Known codes
+-- Known codes (update these as new codes are released)
 local codes = {
     "Release",
     "500Likes",
@@ -33,6 +32,7 @@ local codes = {
     "5kLikes",
     "Update1",
     "NewYear2024",
+    -- Add more codes as they're released
 }
 
 -- Create Window
@@ -109,7 +109,7 @@ ExchangeSection:AddSlider({
     Min = 0.1,
     Max = 5,
     Default = 0.1,
-    Color = Color3.fromRGB(255, 255, 255),
+    Color = Color3.fromRGB(255,255,255),
     Increment = 0.1,
     ValueName = "seconds",
     Callback = function(Value)
@@ -188,7 +188,18 @@ local function teleportToCrystal(crystal)
     end
 end
 
--- Auto Crystal Toggle
+-- Button to teleport to nearest crystal
+CrystalSection:AddButton({
+    Name = "Teleport to Nearest Crystal",
+    Callback = function()
+        local crystal = findNearestCrystal()
+        if crystal then
+            teleportToCrystal(crystal)
+        end
+    end
+})
+
+-- Toggle for auto crystal collection
 local autoCrystalLoop = nil
 CrystalSection:AddToggle({
     Name = "Auto Collect Crystals",
@@ -207,10 +218,12 @@ CrystalSection:AddToggle({
                         task.wait(0.5)
                         -- Try to collect using different methods
                         if RS and RS:FindFirstChild("Events") then
+                            -- Method 1: Direct collection
                             RS.Events.CollectGem:FireServer(2)
                             RS.Events.CollectGem:FireServer(3)
                             RS.Events.CollectGem:FireServer(6)
                             
+                            -- Method 2: Proximity prompt interaction
                             local prompt = crystal:FindFirstChild("ProximityPrompt")
                             if prompt then
                                 fireproximityprompt(prompt)
@@ -253,7 +266,7 @@ CodesSection:AddButton({
     Callback = function()
         for _, code in ipairs(codes) do
             redeemCode(code)
-            task.wait(0.5)
+            task.wait(0.5) -- Wait between codes to prevent overload
         end
         OrionLib:MakeNotification({
             Name = "Codes",
@@ -261,6 +274,71 @@ CodesSection:AddButton({
             Image = "rbxassetid://4483345998",
             Time = 5
         })
+    end
+})
+
+-- Teleport Tab
+local TeleportTab = Window:MakeTab({
+    Name = "Teleport",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local TeleportSection = TeleportTab:AddSection({
+    Name = "Main Locations"
+})
+
+-- Common locations in Bitcoin Miner
+local locations = {
+    ["Spawn"] = CFrame.new(0, 0, 0), -- Update with actual coordinates
+    ["Mining Area"] = CFrame.new(0, 0, 0), -- Update with actual coordinates
+    ["Shop"] = CFrame.new(0, 0, 0), -- Update with actual coordinates
+    ["Exchange"] = CFrame.new(0, 0, 0) -- Update with actual coordinates
+}
+
+-- Function to teleport
+local function teleportTo(position)
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        LP.Character.HumanoidRootPart.CFrame = position
+    end
+end
+
+-- Add teleport buttons for each location
+for locationName, position in pairs(locations) do
+    TeleportSection:AddButton({
+        Name = "Teleport to " .. locationName,
+        Callback = function()
+            teleportTo(position)
+        end
+    })
+end
+
+-- Save current location feature
+local savedLocations = {}
+
+TeleportSection:AddButton({
+    Name = "Save Current Location",
+    Callback = function()
+        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(savedLocations, {
+                name = "Location " .. #savedLocations + 1,
+                cframe = LP.Character.HumanoidRootPart.CFrame
+            })
+            
+            TeleportSection:AddButton({
+                Name = "Saved Location " .. #savedLocations,
+                Callback = function()
+                    teleportTo(savedLocations[#savedLocations].cframe)
+                end
+            })
+            
+            OrionLib:MakeNotification({
+                Name = "Location Saved",
+                Content = "Current position has been saved!",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
     end
 })
 
