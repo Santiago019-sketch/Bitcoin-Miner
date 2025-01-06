@@ -17,7 +17,9 @@ local Config = {
     CollectDelay = 0.1,
     ExchangeDelay = 0.1,
     AutoCrystalTP = false,
-    TeleportSpeed = 15
+    AutoExchangeEnabled = false,
+    AutoMineEnabled = false,
+    AutoUpgradeEnabled = false
 }
 
 -- Known codes
@@ -41,55 +43,107 @@ local Window = OrionLib:MakeWindow({
     ConfigFolder = "CryptoMinerConfig"
 })
 
--- Main Tab
-local MainTab = Window:MakeTab({
-    Name = "Main",
+-- Mining Tab
+local MiningTab = Window:MakeTab({
+    Name = "Mining",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
-local MainSection = MainTab:AddSection({
-    Name = "Main Features"
+local MiningSection = MiningTab:AddSection({
+    Name = "Mining Features"
 })
 
--- Codes Tab
-local CodesTab = Window:MakeTab({
-    Name = "Codes",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local CodesSection = CodesTab:AddSection({
-    Name = "Redeem Codes"
-})
-
--- Function to redeem a code
-local function redeemCode(code)
-    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("RedeemCode") then
-        RS.Events.RedeemCode:FireServer(code)
-    end
-    
-    -- Try alternative remote paths
-    if RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("RedeemCode") then
-        RS.Remotes.RedeemCode:FireServer(code)
-    end
-    
-    task.wait(0.5)
-end
-
--- Add button to redeem all codes
-CodesSection:AddButton({
-    Name = "Redeem All Codes",
-    Callback = function()
-        for _, code in ipairs(codes) do
-            redeemCode(code)
+-- Auto Mine Toggle
+MiningSection:AddToggle({
+    Name = "Auto Mine",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoMineEnabled = Value
+        if Value then
+            spawn(function()
+                while Config.AutoMineEnabled do
+                    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("Mine") then
+                        RS.Events.Mine:FireServer()
+                    end
+                    task.wait(0.1)
+                end
+            end)
         end
-        OrionLib:MakeNotification({
-            Name = "Codes",
-            Content = "Attempted to redeem all codes!",
-            Image = "rbxassetid://4483345998",
-            Time = 5
-        })
+    end
+})
+
+-- Exchange Tab
+local ExchangeTab = Window:MakeTab({
+    Name = "Exchange",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local ExchangeSection = ExchangeTab:AddSection({
+    Name = "Auto Exchange"
+})
+
+-- Auto Exchange Toggle
+ExchangeSection:AddToggle({
+    Name = "Auto Exchange",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoExchangeEnabled = Value
+        if Value then
+            spawn(function()
+                while Config.AutoExchangeEnabled do
+                    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("Exchange") then
+                        RS.Events.Exchange:FireServer()
+                    end
+                    task.wait(Config.ExchangeDelay)
+                end
+            end)
+        end
+    end
+})
+
+-- Exchange Delay Slider
+ExchangeSection:AddSlider({
+    Name = "Exchange Delay",
+    Min = 0.1,
+    Max = 5,
+    Default = 0.1,
+    Color = Color3.fromRGB(255, 255, 255),
+    Increment = 0.1,
+    ValueName = "seconds",
+    Callback = function(Value)
+        Config.ExchangeDelay = Value
+    end    
+})
+
+-- Algorithm Tab
+local AlgorithmTab = Window:MakeTab({
+    Name = "Algorithm",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local AlgorithmSection = AlgorithmTab:AddSection({
+    Name = "Auto Upgrade"
+})
+
+-- Auto Upgrade Toggle
+AlgorithmSection:AddToggle({
+    Name = "Auto Upgrade Algorithm",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoUpgradeEnabled = Value
+        if Value then
+            spawn(function()
+                while Config.AutoUpgradeEnabled do
+                    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("UpgradeAlgorithm") then
+                        RS.Events.UpgradeAlgorithm:FireServer()
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
     end
 })
 
@@ -130,153 +184,83 @@ end
 -- Function to teleport to crystal
 local function teleportToCrystal(crystal)
     if crystal and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        local targetCFrame = CFrame.new(crystal.Position + Vector3.new(0, 3, 0))
-        local tween = TweenService:Create(
-            LP.Character.HumanoidRootPart,
-            TweenInfo.new(1, Enum.EasingStyle.Linear),
-            {CFrame = targetCFrame}
-        )
-        tween:Play()
+        LP.Character.HumanoidRootPart.CFrame = CFrame.new(crystal.Position + Vector3.new(0, 3, 0))
     end
 end
 
--- Button to teleport to nearest crystal
-CrystalSection:AddButton({
-    Name = "Teleport to Nearest Crystal",
-    Callback = function()
-        local crystal = findNearestCrystal()
-        if crystal then
-            teleportToCrystal(crystal)
-        end
-    end
-})
-
--- Toggle for auto crystal collection
+-- Auto Crystal Toggle
+local autoCrystalLoop = nil
 CrystalSection:AddToggle({
     Name = "Auto Collect Crystals",
     Default = false,
     Callback = function(Value)
         Config.AutoCrystalTP = Value
         if Value then
-            task.spawn(function()
+            if autoCrystalLoop then
+                task.cancel(autoCrystalLoop)
+            end
+            autoCrystalLoop = task.spawn(function()
                 while Config.AutoCrystalTP do
                     local crystal = findNearestCrystal()
                     if crystal then
                         teleportToCrystal(crystal)
                         task.wait(0.5)
+                        -- Try to collect using different methods
                         if RS and RS:FindFirstChild("Events") then
                             RS.Events.CollectGem:FireServer(2)
                             RS.Events.CollectGem:FireServer(3)
                             RS.Events.CollectGem:FireServer(6)
+                            
+                            local prompt = crystal:FindFirstChild("ProximityPrompt")
+                            if prompt then
+                                fireproximityprompt(prompt)
+                            end
                         end
                     end
                     task.wait(1)
                 end
             end)
+        else
+            if autoCrystalLoop then
+                task.cancel(autoCrystalLoop)
+                autoCrystalLoop = nil
+            end
         end
     end
 })
 
--- Mining Tab
-local MiningTab = Window:MakeTab({
-    Name = "Mining",
+-- Codes Tab
+local CodesTab = Window:MakeTab({
+    Name = "Codes",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
-local MiningSection = MiningTab:AddSection({
-    Name = "Mining Features"
+local CodesSection = CodesTab:AddSection({
+    Name = "Redeem Codes"
 })
 
--- Auto Mine Toggle
-MiningSection:AddToggle({
-    Name = "Auto Mine",
-    Default = false,
-    Callback = function(Value)
-        Config.AutoMine = Value
-        if Value then
-            task.spawn(function()
-                while Config.AutoMine do
-                    -- Fire mining remote
-                    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("Mine") then
-                        RS.Events.Mine:FireServer()
-                    end
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end
-})
-
--- Teleport Tab
-local TeleportTab = Window:MakeTab({
-    Name = "Teleport",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local TeleportSection = TeleportTab:AddSection({
-    Name = "Locations"
-})
-
--- Function to teleport with tween
-local function tweenToPosition(position)
-    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        local targetCFrame = typeof(position) == "CFrame" and position or CFrame.new(position)
-        local tween = TweenService:Create(
-            LP.Character.HumanoidRootPart,
-            TweenInfo.new(1, Enum.EasingStyle.Linear),
-            {CFrame = targetCFrame}
-        )
-        tween:Play()
+-- Function to redeem a code
+local function redeemCode(code)
+    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("RedeemCode") then
+        RS.Events.RedeemCode:FireServer(code)
     end
 end
 
--- Add teleport locations
-local locations = {
-    ["Spawn"] = Vector3.new(0, 5, 0),  -- Update these coordinates
-    ["Mining Area"] = Vector3.new(50, 5, 50),
-    ["Shop"] = Vector3.new(-50, 5, -50),
-    ["Exchange"] = Vector3.new(100, 5, 100)
-}
-
-for name, position in pairs(locations) do
-    TeleportSection:AddButton({
-        Name = "Teleport to " .. name,
-        Callback = function()
-            tweenToPosition(position)
-        end
-    })
-end
-
--- Save Location feature
-local savedLocations = {}
-
-TeleportSection:AddButton({
-    Name = "Save Current Location",
+-- Add button to redeem all codes
+CodesSection:AddButton({
+    Name = "Redeem All Codes",
     Callback = function()
-        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local currentPos = LP.Character.HumanoidRootPart.Position
-            table.insert(savedLocations, {
-                name = "Location " .. #savedLocations + 1,
-                position = currentPos
-            })
-            
-            -- Add button for the saved location
-            TeleportSection:AddButton({
-                Name = "Saved Location " .. #savedLocations,
-                Callback = function()
-                    tweenToPosition(currentPos)
-                end
-            })
-            
-            OrionLib:MakeNotification({
-                Name = "Location Saved",
-                Content = "Current position has been saved!",
-                Image = "rbxassetid://4483345998",
-                Time = 5
-            })
+        for _, code in ipairs(codes) do
+            redeemCode(code)
+            task.wait(0.5)
         end
+        OrionLib:MakeNotification({
+            Name = "Codes",
+            Content = "Attempted to redeem all codes!",
+            Image = "rbxassetid://4483345998",
+            Time = 5
+        })
     end
 })
 
@@ -295,7 +279,12 @@ game:GetService("CoreGui").ChildRemoved:Connect(function(child)
     if child.Name == "OrionLib" then
         Config.AutoCollectEnabled = false
         Config.AutoCrystalTP = false
-        Config.AutoMine = false
+        Config.AutoExchangeEnabled = false
+        Config.AutoMineEnabled = false
+        Config.AutoUpgradeEnabled = false
+        if autoCrystalLoop then
+            task.cancel(autoCrystalLoop)
+        end
         OrionLib:Destroy()
     end
 end)
