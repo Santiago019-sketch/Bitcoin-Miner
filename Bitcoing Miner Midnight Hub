@@ -3,142 +3,170 @@ if game:GetService("CoreGui"):FindFirstChild("CryptoMiner") then
     game:GetService("CoreGui"):FindFirstChild("CryptoMiner"):Destroy()
 end
 
--- Load UI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Crypto Miner Hub", "Ocean")
-
 -- Services
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
--- Variables
-local AutoFarmEnabled = false
-local AutoCollectEnabled = false
-local CollectDelay = 0.1
-local ExchangeDelay = 0.1
+-- Error handling wrapper
+local function safely(func)
+    return function(...)
+        local success, result = pcall(func, ...)
+        if not success then
+            warn("Error occurred:", result)
+        end
+        return success, result
+    end
+end
+
+-- Load UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Crypto Miner Hub", "Ocean")
+
+-- Variables with proper scoping
+local Config = {
+    AutoFarmEnabled = false,
+    AutoCollectEnabled = false,
+    CollectDelay = 0.1,
+    ExchangeDelay = 0.1,
+    WalkSpeed = 16
+}
 
 -- Main Mining Tab
 local MiningTab = Window:NewTab("Mining")
 local CrystalSection = MiningTab:NewSection("Crystal Collection")
 
 -- Crystal Collection Functions
-CrystalSection:NewButton("Collect All Crystals", "Collects all available crystals", function()
-    -- Collect all types of crystals
+local function collectCrystal(crystalId)
+    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("CollectGem") then
+        return RS.Events.CollectGem:FireServer(crystalId)
+    end
+    return false
+end
+
+CrystalSection:NewButton("Collect All Crystals", "Collects all available crystals", safely(function()
     local crystalTypes = {2, 3, 6}
     for _, crystalId in ipairs(crystalTypes) do
-        RS.Events.CollectGem:FireServer(crystalId)
-        task.wait(0.1)
+        collectCrystal(crystalId)
+        task.wait(Config.CollectDelay)
     end
-end)
+end))
 
 CrystalSection:NewToggle("Auto Collect Crystals", "Automatically collects crystals", function(state)
-    AutoCollectEnabled = state
-    while AutoCollectEnabled do
-        -- Auto collect all crystal types
-        local crystalTypes = {2, 3, 6}
-        for _, crystalId in ipairs(crystalTypes) do
-            RS.Events.CollectGem:FireServer(crystalId)
-            task.wait(CollectDelay)
+    Config.AutoCollectEnabled = state
+    task.spawn(function()
+        while Config.AutoCollectEnabled do
+            local crystalTypes = {2, 3, 6}
+            for _, crystalId in ipairs(crystalTypes) do
+                if not Config.AutoCollectEnabled then break end
+                collectCrystal(crystalId)
+                task.wait(Config.CollectDelay)
+            end
+            task.wait(0.5)
         end
-        task.wait(0.5) -- Wait before next collection cycle
-    end
+    end)
 end)
 
-CrystalSection:NewSlider("Collection Delay", "Adjust collection speed", 1, 0.1, function(v)
-    CollectDelay = v
+CrystalSection:NewSlider("Collection Delay", "Adjust collection speed", 1, 0.1, function(value)
+    Config.CollectDelay = value
 end)
 
 -- Exchange Tab
 local ExchangeTab = Window:NewTab("Exchange")
-local ExchangeSection = ExchangeSection:NewSection("Currency Exchange")
+local ExchangeSection = ExchangeTab:NewSection("Currency Exchange")
 
--- Bitcoin Exchange
-ExchangeSection:NewButton("Exchange Bitcoin", "Exchanges Bitcoin once", function()
-    RS.Events.ExchangeMoney:FireServer(true)
-end)
+-- Exchange Functions
+local function exchangeCurrency(isBitcoin)
+    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("ExchangeMoney") then
+        return RS.Events.ExchangeMoney:FireServer(isBitcoin)
+    end
+    return false
+end
+
+ExchangeSection:NewButton("Exchange Bitcoin", "Exchanges Bitcoin once", safely(function()
+    exchangeCurrency(true)
+end))
 
 ExchangeSection:NewToggle("Auto Exchange Bitcoin", "Automatically exchanges Bitcoin", function(state)
     _G.AutoBitcoin = state
-    while _G.AutoBitcoin do
-        RS.Events.ExchangeMoney:FireServer(true)
-        task.wait(ExchangeDelay)
-    end
+    task.spawn(function()
+        while _G.AutoBitcoin do
+            exchangeCurrency(true)
+            task.wait(Config.ExchangeDelay)
+        end
+    end)
 end)
 
--- Solaris Exchange
-ExchangeSection:NewButton("Exchange Solaris", "Exchanges Solaris once", function()
-    RS.Events.ExchangeMoney:FireServer(false)
-end)
+ExchangeSection:NewButton("Exchange Solaris", "Exchanges Solaris once", safely(function()
+    exchangeCurrency(false)
+end))
 
 ExchangeSection:NewToggle("Auto Exchange Solaris", "Automatically exchanges Solaris", function(state)
     _G.AutoSolaris = state
-    while _G.AutoSolaris do
-        RS.Events.ExchangeMoney:FireServer(false)
-        task.wait(ExchangeDelay)
-    end
+    task.spawn(function()
+        while _G.AutoSolaris do
+            exchangeCurrency(false)
+            task.wait(Config.ExchangeDelay)
+        end
+    end)
 end)
 
-ExchangeSection:NewSlider("Exchange Delay", "Adjust exchange speed", 1, 0.1, function(v)
-    ExchangeDelay = v
+ExchangeSection:NewSlider("Exchange Delay", "Adjust exchange speed", 1, 0.1, function(value)
+    Config.ExchangeDelay = value
 end)
 
 -- Algorithm Tab
 local AlgoTab = Window:NewTab("Algorithm")
 local AlgoSection = AlgoTab:NewSection("Mining Algorithm")
 
-AlgoSection:NewDropdown("Select Algorithm", "Choose mining algorithm", {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"}, function(value)
-    local algoMap = {
-        ["Algorithm 1"] = 1,
-        ["Algorithm 2"] = 2,
-        ["Algorithm 3"] = 3,
-        ["Algorithm 4"] = 4
-    }
-    RS.Events.AlgoChang:FireServer(algoMap[value])
-end)
+local algoMap = {
+    ["Algorithm 1"] = 1,
+    ["Algorithm 2"] = 2,
+    ["Algorithm 3"] = 3,
+    ["Algorithm 4"] = 4
+}
+
+AlgoSection:NewDropdown("Select Algorithm", "Choose mining algorithm", {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"}, safely(function(value)
+    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("AlgoChang") then
+        RS.Events.AlgoChang:FireServer(algoMap[value])
+    end
+end))
 
 -- Player Tab
 local PlayerTab = Window:NewTab("Player")
 local PlayerSection = PlayerTab:NewSection("Local Player")
 
-PlayerSection:NewSlider("Walk Speed", "Changes your walk speed", 100, 16, function(v)
+local function updateWalkSpeed(speed)
+    Config.WalkSpeed = speed
     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-        LP.Character.Humanoid.WalkSpeed = v
+        LP.Character.Humanoid.WalkSpeed = speed
     end
+end
+
+PlayerSection:NewSlider("Walk Speed", "Changes your walk speed", 100, 16, function(value)
+    updateWalkSpeed(value)
 end)
 
--- Protection
-local mt = getrawmetatable(game)
-setreadonly(mt, false)
-local old = mt.__namecall
-mt.__namecall = newcclosure(function(...)
-    local args = {...}
-    if getnamecallmethod() == "Kick" then
-        return
+-- Character respawn handler
+LP.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid")
+    if Config.WalkSpeed then
+        humanoid.WalkSpeed = Config.WalkSpeed
     end
-    return old(...)
 end)
-setreadonly(mt, true)
 
 -- UI Toggle
-local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.RightShift then
         Library:ToggleUI()
     end
 end)
 
--- Notification
-game:GetService("StarterGui"):SetCore("SendNotification", {
+-- Initial notification
+StarterGui:SetCore("SendNotification", {
     Title = "Script Loaded",
     Text = "Press Right-Shift to toggle GUI",
     Duration = 5
 })
-
--- Handle Character Respawn
-LP.CharacterAdded:Connect(function(char)
-    local humanoid = char:WaitForChild("Humanoid")
-    if _G.WalkSpeedValue then
-        humanoid.WalkSpeed = _G.WalkSpeedValue
-    end
-end)
