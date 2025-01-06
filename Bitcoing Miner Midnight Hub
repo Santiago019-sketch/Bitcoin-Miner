@@ -17,52 +17,21 @@ local Config = {
     CollectDelay = 0.1,
     ExchangeDelay = 0.1,
     AutoCrystalTP = false,
-    TeleportSpeed = 15 -- Tween speed in seconds
+    TeleportSpeed = 15
 }
 
--- Helper Functions
-local function tweenTo(target, duration)
-    if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local humanoidRootPart = LP.Character.HumanoidRootPart
-    local targetCFrame = typeof(target) == "CFrame" and target or CFrame.new(target)
-    
-    -- Calculate distance for dynamic duration
-    local distance = (targetCFrame.Position - humanoidRootPart.Position).Magnitude
-    local actualDuration = duration or (distance / Config.TeleportSpeed)
-    
-    -- Create and play tween
-    local tween = TweenService:Create(humanoidRootPart, 
-        TweenInfo.new(actualDuration, Enum.EasingStyle.Linear), 
-        {CFrame = targetCFrame}
-    )
-    tween:Play()
-    return tween
-end
-
--- Known codes (updated with source validation)
-local function fetchGameCodes()
-    local codes = {}
-    -- Search for code-related RemoteEvents/RemoteFunctions
-    for _, remote in pairs(RS:GetDescendants()) do
-        if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-            if remote.Name:lower():match("code") or remote.Name:lower():match("redeem") then
-                -- Common code patterns found in crypto games
-                table.insert(codes, "Release")
-                table.insert(codes, "Update1")
-                table.insert(codes, "NewYear2024")
-                -- Like milestones
-                for i = 1, 10 do
-                    table.insert(codes, i.."kLikes")
-                    table.insert(codes, i.."00Likes")
-                end
-            end
-        end
-    end
-    return codes
-end
-
-local codes = fetchGameCodes()
+-- Known codes
+local codes = {
+    "Release",
+    "500Likes",
+    "1kLikes",
+    "2kLikes",
+    "3kLikes",
+    "4kLikes",
+    "5kLikes",
+    "Update1",
+    "NewYear2024",
+}
 
 -- Create Window
 local Window = OrionLib:MakeWindow({
@@ -72,7 +41,18 @@ local Window = OrionLib:MakeWindow({
     ConfigFolder = "CryptoMinerConfig"
 })
 
--- Codes Tab with Enhanced Redemption
+-- Main Tab
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local MainSection = MainTab:AddSection({
+    Name = "Main Features"
+})
+
+-- Codes Tab
 local CodesTab = Window:MakeTab({
     Name = "Codes",
     Icon = "rbxassetid://4483345998",
@@ -83,28 +63,18 @@ local CodesSection = CodesTab:AddSection({
     Name = "Redeem Codes"
 })
 
--- Enhanced code redemption with multiple methods
+-- Function to redeem a code
 local function redeemCode(code)
-    -- Method 1: Direct RemoteEvent
     if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("RedeemCode") then
         RS.Events.RedeemCode:FireServer(code)
     end
     
-    -- Method 2: Search for any redeem-related remote
-    for _, remote in pairs(RS:GetDescendants()) do
-        if (remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction")) and
-           (remote.Name:lower():match("code") or remote.Name:lower():match("redeem")) then
-            pcall(function()
-                if remote:IsA("RemoteEvent") then
-                    remote:FireServer(code)
-                else
-                    remote:InvokeServer(code)
-                end
-            end)
-        end
+    -- Try alternative remote paths
+    if RS:FindFirstChild("Remotes") and RS.Remotes:FindFirstChild("RedeemCode") then
+        RS.Remotes.RedeemCode:FireServer(code)
     end
     
-    task.wait(0.5) -- Prevent throttling
+    task.wait(0.5)
 end
 
 -- Add button to redeem all codes
@@ -123,7 +93,7 @@ CodesSection:AddButton({
     end
 })
 
--- Enhanced Crystal Collection
+-- Crystal Tab
 local CrystalTab = Window:MakeTab({
     Name = "Crystals",
     Icon = "rbxassetid://4483345998",
@@ -134,54 +104,181 @@ local CrystalSection = CrystalTab:AddSection({
     Name = "Crystal Collection"
 })
 
--- Improved crystal detection
+-- Function to find nearest crystal
 local function findNearestCrystal()
     local nearestCrystal = nil
     local minDistance = math.huge
     
-    -- Common crystal-related keywords
-    local crystalKeywords = {
-        "crystal", "gem", "mineral", "ore", "diamond",
-        "ruby", "emerald", "sapphire", "red", "green", "blue"
-    }
-    
     for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") or v:IsA("Model") then
-            -- Check if the object matches any crystal keywords
-            local isMatch = false
-            for _, keyword in ipairs(crystalKeywords) do
-                if v.Name:lower():match(keyword) then
-                    isMatch = true
-                    break
-                end
-            end
-            
-            if isMatch then
-                local pos = v:IsA("Model") and v:GetPivot().Position or v.Position
-                local distance = (LP.Character.HumanoidRootPart.Position - pos).Magnitude
-                if distance < minDistance then
-                    minDistance = distance
-                    nearestCrystal = v
-                end
+        if v:IsA("BasePart") and (
+            v.Name:lower():match("crystal") or 
+            v.Name:lower():match("gem") or 
+            v.Name:lower():match("red") or 
+            v.Name:lower():match("green") or 
+            v.Name:lower():match("blue")
+        ) then
+            local distance = (LP.Character.HumanoidRootPart.Position - v.Position).Magnitude
+            if distance < minDistance then
+                minDistance = distance
+                nearestCrystal = v
             end
         end
     end
     return nearestCrystal
 end
 
--- Enhanced teleportation to crystal
+-- Function to teleport to crystal
 local function teleportToCrystal(crystal)
-    if not crystal or not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local targetPos = crystal:IsA("Model") and crystal:GetPivot().Position or crystal.Position
-    local targetCFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-    
-    -- Smoothly tween to the crystal
-    tweenTo(targetCFrame, 1)
+    if crystal and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        local targetCFrame = CFrame.new(crystal.Position + Vector3.new(0, 3, 0))
+        local tween = TweenService:Create(
+            LP.Character.HumanoidRootPart,
+            TweenInfo.new(1, Enum.EasingStyle.Linear),
+            {CFrame = targetCFrame}
+        )
+        tween:Play()
+    end
 end
 
--- Rest of your existing tabs and functionality here...
--- (Mining Tab, Exchange Tab, etc.)
+-- Button to teleport to nearest crystal
+CrystalSection:AddButton({
+    Name = "Teleport to Nearest Crystal",
+    Callback = function()
+        local crystal = findNearestCrystal()
+        if crystal then
+            teleportToCrystal(crystal)
+        end
+    end
+})
+
+-- Toggle for auto crystal collection
+CrystalSection:AddToggle({
+    Name = "Auto Collect Crystals",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoCrystalTP = Value
+        if Value then
+            task.spawn(function()
+                while Config.AutoCrystalTP do
+                    local crystal = findNearestCrystal()
+                    if crystal then
+                        teleportToCrystal(crystal)
+                        task.wait(0.5)
+                        if RS and RS:FindFirstChild("Events") then
+                            RS.Events.CollectGem:FireServer(2)
+                            RS.Events.CollectGem:FireServer(3)
+                            RS.Events.CollectGem:FireServer(6)
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
+-- Mining Tab
+local MiningTab = Window:MakeTab({
+    Name = "Mining",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local MiningSection = MiningTab:AddSection({
+    Name = "Mining Features"
+})
+
+-- Auto Mine Toggle
+MiningSection:AddToggle({
+    Name = "Auto Mine",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoMine = Value
+        if Value then
+            task.spawn(function()
+                while Config.AutoMine do
+                    -- Fire mining remote
+                    if RS:FindFirstChild("Events") and RS.Events:FindFirstChild("Mine") then
+                        RS.Events.Mine:FireServer()
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+-- Teleport Tab
+local TeleportTab = Window:MakeTab({
+    Name = "Teleport",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local TeleportSection = TeleportTab:AddSection({
+    Name = "Locations"
+})
+
+-- Function to teleport with tween
+local function tweenToPosition(position)
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        local targetCFrame = typeof(position) == "CFrame" and position or CFrame.new(position)
+        local tween = TweenService:Create(
+            LP.Character.HumanoidRootPart,
+            TweenInfo.new(1, Enum.EasingStyle.Linear),
+            {CFrame = targetCFrame}
+        )
+        tween:Play()
+    end
+end
+
+-- Add teleport locations
+local locations = {
+    ["Spawn"] = Vector3.new(0, 5, 0),  -- Update these coordinates
+    ["Mining Area"] = Vector3.new(50, 5, 50),
+    ["Shop"] = Vector3.new(-50, 5, -50),
+    ["Exchange"] = Vector3.new(100, 5, 100)
+}
+
+for name, position in pairs(locations) do
+    TeleportSection:AddButton({
+        Name = "Teleport to " .. name,
+        Callback = function()
+            tweenToPosition(position)
+        end
+    })
+end
+
+-- Save Location feature
+local savedLocations = {}
+
+TeleportSection:AddButton({
+    Name = "Save Current Location",
+    Callback = function()
+        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local currentPos = LP.Character.HumanoidRootPart.Position
+            table.insert(savedLocations, {
+                name = "Location " .. #savedLocations + 1,
+                position = currentPos
+            })
+            
+            -- Add button for the saved location
+            TeleportSection:AddButton({
+                Name = "Saved Location " .. #savedLocations,
+                Callback = function()
+                    tweenToPosition(currentPos)
+                end
+            })
+            
+            OrionLib:MakeNotification({
+                Name = "Location Saved",
+                Content = "Current position has been saved!",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
+    end
+})
 
 -- Initialize
 OrionLib:Init()
@@ -189,7 +286,7 @@ OrionLib:Init()
 -- Anti-AFK
 LP.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
+    wait(1)
     VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
@@ -198,9 +295,7 @@ game:GetService("CoreGui").ChildRemoved:Connect(function(child)
     if child.Name == "OrionLib" then
         Config.AutoCollectEnabled = false
         Config.AutoCrystalTP = false
-        if autoCrystalLoop then
-            task.cancel(autoCrystalLoop)
-        end
+        Config.AutoMine = false
         OrionLib:Destroy()
     end
 end)
