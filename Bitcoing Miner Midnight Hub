@@ -1,155 +1,218 @@
 -- Cleanup existing GUI
-if game:GetService("CoreGui"):FindFirstChild("CryptoMiner") then
-    game:GetService("CoreGui"):FindFirstChild("CryptoMiner"):Destroy()
+if game:GetService("CoreGui"):FindFirstChild("OrionLib") then
+    game:GetService("CoreGui"):FindFirstChild("OrionLib"):Destroy()
 end
 
 -- Services
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local StarterGui = game:GetService("StarterGui")
 
--- Error handling wrapper
-local function safely(func)
-    return function(...)
-        local success, result = pcall(func, ...)
-        if not success then
-            warn("Error occurred:", result)
-        end
-        return success, result
-    end
-end
-
--- Load UI Library
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Crypto Miner Hub", "Ocean")
-
--- Variables with proper scoping
+-- Config
 local Config = {
-    AutoFarmEnabled = false,
     AutoCollectEnabled = false,
     CollectDelay = 0.1,
-    ExchangeDelay = 0.1,
-    WalkSpeed = 16
+    AutoExchangeBTC = false,
+    AutoExchangeSolaris = false,
+    ExchangeDelay = 0.1
 }
 
--- Main Mining Tab
-local MiningTab = Window:NewTab("Mining")
-local CrystalSection = MiningTab:NewSection("Crystal Collection")
+-- Create Window
+local Window = OrionLib:MakeWindow({
+    Name = "Crypto Miner Hub",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "CryptoMinerConfig"
+})
 
--- Crystal Collection Functions
-local function collectCrystal(crystalId)
-    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("CollectGem") then
-        return RS.Events.CollectGem:FireServer(crystalId)
+-- Mining Tab
+local MiningTab = Window:MakeTab({
+    Name = "Mining",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Crystal Collection Section
+local CrystalSection = MiningTab:AddSection({
+    Name = "Crystal Collection"
+})
+
+CrystalSection:AddButton({
+    Name = "Collect All Crystals",
+    Callback = function()
+        local crystalTypes = {2, 3, 6}
+        for _, crystalId in ipairs(crystalTypes) do
+            if RS and RS:FindFirstChild("Events") then
+                RS.Events.CollectGem:FireServer(crystalId)
+                task.wait(Config.CollectDelay)
+            end
+        end
     end
-    return false
-end
+})
 
-CrystalSection:NewButton("Collect All Crystals", "Collects all available crystals", safely(function()
-    local crystalTypes = {2, 3, 6}
-    for _, crystalId in ipairs(crystalTypes) do
-        collectCrystal(crystalId)
-        task.wait(Config.CollectDelay)
-    end
-end))
-
-CrystalSection:NewToggle("Auto Collect Crystals", "Automatically collects crystals", function(state)
-    Config.AutoCollectEnabled = state
-    task.spawn(function()
+CrystalSection:AddToggle({
+    Name = "Auto Collect",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoCollectEnabled = Value
         while Config.AutoCollectEnabled do
             local crystalTypes = {2, 3, 6}
             for _, crystalId in ipairs(crystalTypes) do
                 if not Config.AutoCollectEnabled then break end
-                collectCrystal(crystalId)
-                task.wait(Config.CollectDelay)
+                if RS and RS:FindFirstChild("Events") then
+                    RS.Events.CollectGem:FireServer(crystalId)
+                    task.wait(Config.CollectDelay)
+                end
             end
             task.wait(0.5)
         end
-    end)
-end)
+    end
+})
 
-CrystalSection:NewSlider("Collection Delay", "Adjust collection speed", 1, 0.1, function(value)
-    Config.CollectDelay = value
-end)
+CrystalSection:AddSlider({
+    Name = "Collection Delay",
+    Min = 0.1,
+    Max = 1,
+    Default = 0.1,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 0.1,
+    ValueName = "seconds",
+    Callback = function(Value)
+        Config.CollectDelay = Value
+    end    
+})
 
 -- Exchange Tab
-local ExchangeTab = Window:NewTab("Exchange")
-local ExchangeSection = ExchangeTab:NewSection("Currency Exchange")
+local ExchangeTab = Window:MakeTab({
+    Name = "Exchange",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
--- Exchange Functions
-local function exchangeCurrency(isBitcoin)
-    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("ExchangeMoney") then
-        return RS.Events.ExchangeMoney:FireServer(isBitcoin)
+local ExchangeSection = ExchangeTab:AddSection({
+    Name = "Currency Exchange"
+})
+
+-- Bitcoin Exchange
+ExchangeSection:AddButton({
+    Name = "Exchange Bitcoin",
+    Callback = function()
+        if RS and RS:FindFirstChild("Events") then
+            RS.Events.ExchangeMoney:FireServer(true)
+        end
     end
-    return false
-end
+})
 
-ExchangeSection:NewButton("Exchange Bitcoin", "Exchanges Bitcoin once", safely(function()
-    exchangeCurrency(true)
-end))
-
-ExchangeSection:NewToggle("Auto Exchange Bitcoin", "Automatically exchanges Bitcoin", function(state)
-    _G.AutoBitcoin = state
-    task.spawn(function()
-        while _G.AutoBitcoin do
-            exchangeCurrency(true)
-            task.wait(Config.ExchangeDelay)
+ExchangeSection:AddToggle({
+    Name = "Auto Exchange Bitcoin",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoExchangeBTC = Value
+        while Config.AutoExchangeBTC do
+            if RS and RS:FindFirstChild("Events") then
+                RS.Events.ExchangeMoney:FireServer(true)
+                task.wait(Config.ExchangeDelay)
+            end
         end
-    end)
-end)
+    end
+})
 
-ExchangeSection:NewButton("Exchange Solaris", "Exchanges Solaris once", safely(function()
-    exchangeCurrency(false)
-end))
-
-ExchangeSection:NewToggle("Auto Exchange Solaris", "Automatically exchanges Solaris", function(state)
-    _G.AutoSolaris = state
-    task.spawn(function()
-        while _G.AutoSolaris do
-            exchangeCurrency(false)
-            task.wait(Config.ExchangeDelay)
+-- Solaris Exchange
+ExchangeSection:AddButton({
+    Name = "Exchange Solaris",
+    Callback = function()
+        if RS and RS:FindFirstChild("Events") then
+            RS.Events.ExchangeMoney:FireServer(false)
         end
-    end)
-end)
+    end
+})
 
-ExchangeSection:NewSlider("Exchange Delay", "Adjust exchange speed", 1, 0.1, function(value)
-    Config.ExchangeDelay = value
-end)
+ExchangeSection:AddToggle({
+    Name = "Auto Exchange Solaris",
+    Default = false,
+    Callback = function(Value)
+        Config.AutoExchangeSolaris = Value
+        while Config.AutoExchangeSolaris do
+            if RS and RS:FindFirstChild("Events") then
+                RS.Events.ExchangeMoney:FireServer(false)
+                task.wait(Config.ExchangeDelay)
+            end
+        end
+    end
+})
+
+ExchangeSection:AddSlider({
+    Name = "Exchange Delay",
+    Min = 0.1,
+    Max = 1,
+    Default = 0.1,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 0.1,
+    ValueName = "seconds",
+    Callback = function(Value)
+        Config.ExchangeDelay = Value
+    end    
+})
 
 -- Algorithm Tab
-local AlgoTab = Window:NewTab("Algorithm")
-local AlgoSection = AlgoTab:NewSection("Mining Algorithm")
+local AlgoTab = Window:MakeTab({
+    Name = "Algorithm",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
-local algoMap = {
-    ["Algorithm 1"] = 1,
-    ["Algorithm 2"] = 2,
-    ["Algorithm 3"] = 3,
-    ["Algorithm 4"] = 4
-}
+local AlgoSection = AlgoTab:AddSection({
+    Name = "Mining Algorithm"
+})
 
-AlgoSection:NewDropdown("Select Algorithm", "Choose mining algorithm", {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"}, safely(function(value)
-    if RS and RS:FindFirstChild("Events") and RS.Events:FindFirstChild("AlgoChang") then
-        RS.Events.AlgoChang:FireServer(algoMap[value])
-    end
-end))
+AlgoSection:AddDropdown({
+    Name = "Select Algorithm",
+    Default = "Algorithm 1",
+    Options = {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"},
+    Callback = function(Value)
+        local algoMap = {
+            ["Algorithm 1"] = 1,
+            ["Algorithm 2"] = 2,
+            ["Algorithm 3"] = 3,
+            ["Algorithm 4"] = 4
+        }
+        if RS and RS:FindFirstChild("Events") then
+            RS.Events.AlgoChang:FireServer(algoMap[Value])
+        end
+    end    
+})
 
 -- Player Tab
-local PlayerTab = Window:NewTab("Player")
-local PlayerSection = PlayerTab:NewSection("Local Player")
+local PlayerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
 
-local function updateWalkSpeed(speed)
-    Config.WalkSpeed = speed
-    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-        LP.Character.Humanoid.WalkSpeed = speed
-    end
-end
+local PlayerSection = PlayerTab:AddSection({
+    Name = "Local Player"
+})
 
-PlayerSection:NewSlider("Walk Speed", "Changes your walk speed", 100, 16, function(value)
-    updateWalkSpeed(value)
-end)
+PlayerSection:AddSlider({
+    Name = "Walk Speed",
+    Min = 16,
+    Max = 100,
+    Default = 16,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "speed",
+    Callback = function(Value)
+        if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.WalkSpeed = Value
+        end
+    end    
+})
 
--- Character respawn handler
+-- Initialize
+OrionLib:Init()
+
+-- Character Added Handler
 LP.CharacterAdded:Connect(function(char)
     local humanoid = char:WaitForChild("Humanoid")
     if Config.WalkSpeed then
@@ -157,16 +220,12 @@ LP.CharacterAdded:Connect(function(char)
     end
 end)
 
--- UI Toggle
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        Library:ToggleUI()
+-- Cleanup on script end
+game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+    if child.Name == "OrionLib" then
+        Config.AutoCollectEnabled = false
+        Config.AutoExchangeBTC = false
+        Config.AutoExchangeSolaris = false
+        OrionLib:Destroy()
     end
 end)
-
--- Initial notification
-StarterGui:SetCore("SendNotification", {
-    Title = "Script Loaded",
-    Text = "Press Right-Shift to toggle GUI",
-    Duration = 5
-})
