@@ -13,8 +13,6 @@ local LP = Players.LocalPlayer
 local Config = {
     AutoCollectEnabled = false,
     CollectDelay = 0.1,
-    AutoExchangeBTC = false,
-    AutoExchangeSolaris = false,
     ExchangeDelay = 0.1
 }
 
@@ -24,6 +22,93 @@ local Window = OrionLib:MakeWindow({
     HidePremium = false,
     SaveConfig = true,
     ConfigFolder = "CryptoMinerConfig"
+})
+
+-- Teleport Tab (New)
+local TeleportTab = Window:MakeTab({
+    Name = "Teleport",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local TeleportSection = TeleportTab:AddSection({
+    Name = "Locations"
+})
+
+-- Function to teleport
+local function teleportTo(position)
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        LP.Character.HumanoidRootPart.CFrame = position
+    end
+end
+
+-- Function to get all spawns/teleport locations in workspace
+local function findTeleportLocations()
+    local locations = {}
+    local function searchForSpawns(parent)
+        for _, v in ipairs(parent:GetChildren()) do
+            if v.Name:lower():match("spawn") or 
+               v.Name:lower():match("teleport") or 
+               v.Name:lower():match("location") or 
+               v.Name:lower():match("mine") or 
+               v.Name:lower():match("area") then
+                if v:IsA("BasePart") or v:IsA("Model") then
+                    table.insert(locations, {name = v.Name, instance = v})
+                end
+            end
+            if #v:GetChildren() > 0 then
+                searchForSpawns(v)
+            end
+        end
+    end
+    searchForSpawns(workspace)
+    return locations
+end
+
+-- Add found locations to teleport tab
+local locations = findTeleportLocations()
+for _, location in ipairs(locations) do
+    TeleportSection:AddButton({
+        Name = "Teleport to " .. location.name,
+        Callback = function()
+            if location.instance:IsA("Model") and location.instance:FindFirstChild("HumanoidRootPart") then
+                teleportTo(location.instance.HumanoidRootPart.CFrame)
+            elseif location.instance:IsA("BasePart") then
+                teleportTo(location.instance.CFrame)
+            end
+        end
+    })
+end
+
+-- Add manual location saving
+local savedLocations = {}
+
+TeleportSection:AddButton({
+    Name = "Save Current Location",
+    Callback = function()
+        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = LP.Character.HumanoidRootPart.Position
+            table.insert(savedLocations, {
+                name = "Saved Location " .. #savedLocations + 1,
+                position = LP.Character.HumanoidRootPart.CFrame
+            })
+            
+            -- Add button for the new saved location
+            TeleportSection:AddButton({
+                Name = "Teleport to Saved Location " .. #savedLocations,
+                Callback = function()
+                    teleportTo(savedLocations[#savedLocations].position)
+                end
+            })
+            
+            OrionLib:MakeNotification({
+                Name = "Location Saved",
+                Content = "Current position has been saved!",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
+    end
 })
 
 -- Mining Tab
@@ -51,21 +136,35 @@ CrystalSection:AddButton({
     end
 })
 
+-- Auto collect crystals with proper loop
+local autoCollectLoop = nil
 CrystalSection:AddToggle({
     Name = "Auto Collect",
     Default = false,
     Callback = function(Value)
         Config.AutoCollectEnabled = Value
-        while Config.AutoCollectEnabled do
-            local crystalTypes = {2, 3, 6}
-            for _, crystalId in ipairs(crystalTypes) do
-                if not Config.AutoCollectEnabled then break end
-                if RS and RS:FindFirstChild("Events") then
-                    RS.Events.CollectGem:FireServer(crystalId)
-                    task.wait(Config.CollectDelay)
-                end
+        if Value then
+            if autoCollectLoop then
+                task.cancel(autoCollectLoop)
             end
-            task.wait(0.5)
+            autoCollectLoop = task.spawn(function()
+                while Config.AutoCollectEnabled do
+                    local crystalTypes = {2, 3, 6}
+                    for _, crystalId in ipairs(crystalTypes) do
+                        if not Config.AutoCollectEnabled then break end
+                        if RS and RS:FindFirstChild("Events") then
+                            RS.Events.CollectGem:FireServer(crystalId)
+                        end
+                        task.wait(Config.CollectDelay)
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        else
+            if autoCollectLoop then
+                task.cancel(autoCollectLoop)
+                autoCollectLoop = nil
+            end
         end
     end
 })
@@ -94,7 +193,7 @@ local ExchangeSection = ExchangeTab:AddSection({
     Name = "Currency Exchange"
 })
 
--- Bitcoin Exchange
+-- Bitcoin Exchange Button
 ExchangeSection:AddButton({
     Name = "Exchange Bitcoin",
     Callback = function()
@@ -104,21 +203,7 @@ ExchangeSection:AddButton({
     end
 })
 
-ExchangeSection:AddToggle({
-    Name = "Auto Exchange Bitcoin",
-    Default = false,
-    Callback = function(Value)
-        Config.AutoExchangeBTC = Value
-        while Config.AutoExchangeBTC do
-            if RS and RS:FindFirstChild("Events") then
-                RS.Events.ExchangeMoney:FireServer(true)
-                task.wait(Config.ExchangeDelay)
-            end
-        end
-    end
-})
-
--- Solaris Exchange
+-- Solaris Exchange Button
 ExchangeSection:AddButton({
     Name = "Exchange Solaris",
     Callback = function()
@@ -126,33 +211,6 @@ ExchangeSection:AddButton({
             RS.Events.ExchangeMoney:FireServer(false)
         end
     end
-})
-
-ExchangeSection:AddToggle({
-    Name = "Auto Exchange Solaris",
-    Default = false,
-    Callback = function(Value)
-        Config.AutoExchangeSolaris = Value
-        while Config.AutoExchangeSolaris do
-            if RS and RS:FindFirstChild("Events") then
-                RS.Events.ExchangeMoney:FireServer(false)
-                task.wait(Config.ExchangeDelay)
-            end
-        end
-    end
-})
-
-ExchangeSection:AddSlider({
-    Name = "Exchange Delay",
-    Min = 0.1,
-    Max = 1,
-    Default = 0.1,
-    Color = Color3.fromRGB(255,255,255),
-    Increment = 0.1,
-    ValueName = "seconds",
-    Callback = function(Value)
-        Config.ExchangeDelay = Value
-    end    
 })
 
 -- Algorithm Tab
@@ -212,20 +270,13 @@ PlayerSection:AddSlider({
 -- Initialize
 OrionLib:Init()
 
--- Character Added Handler
-LP.CharacterAdded:Connect(function(char)
-    local humanoid = char:WaitForChild("Humanoid")
-    if Config.WalkSpeed then
-        humanoid.WalkSpeed = Config.WalkSpeed
-    end
-end)
-
 -- Cleanup on script end
 game:GetService("CoreGui").ChildRemoved:Connect(function(child)
     if child.Name == "OrionLib" then
         Config.AutoCollectEnabled = false
-        Config.AutoExchangeBTC = false
-        Config.AutoExchangeSolaris = false
+        if autoCollectLoop then
+            task.cancel(autoCollectLoop)
+        end
         OrionLib:Destroy()
     end
 end)
