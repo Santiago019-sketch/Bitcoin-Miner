@@ -1,79 +1,116 @@
--- Cleanup any existing GUI
-local CoreGui = game:GetService("CoreGui")
-if CoreGui:FindFirstChild("BCMX Hub") then
-    CoreGui:FindFirstChild("BCMX Hub"):Destroy()
+-- Cleanup existing GUI
+if game:GetService("CoreGui"):FindFirstChild("CryptoMiner") then
+    game:GetService("CoreGui"):FindFirstChild("CryptoMiner"):Destroy()
 end
 
 -- Load UI Library
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-
--- Create Window
-local Window = Library.CreateLib("BCMX Hub", "DarkTheme")
+local Window = Library.CreateLib("Crypto Miner Hub", "Ocean")
 
 -- Services
 local RS = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
--- Main Tab
-local MainTab = Window:NewTab("Main")
-local MainSection = MainTab:NewSection("Auto Farm")
-
 -- Variables
-local AutoEnabled = false
-local BitcoinAmount = 50
+local AutoFarmEnabled = false
+local AutoCollectEnabled = false
+local CollectDelay = 0.1
+local ExchangeDelay = 0.1
 
--- Bitcoin Functions
-MainSection:NewToggle("Auto Bitcoin", "Automatically exchanges Bitcoin", function(state)
-    AutoEnabled = state
-    while AutoEnabled do
-        RS.Events.ExchangeMoney:FireServer(true)
+-- Main Mining Tab
+local MiningTab = Window:NewTab("Mining")
+local CrystalSection = MiningTab:NewSection("Crystal Collection")
+
+-- Crystal Collection Functions
+CrystalSection:NewButton("Collect All Crystals", "Collects all available crystals", function()
+    -- Collect all types of crystals
+    local crystalTypes = {2, 3, 6}
+    for _, crystalId in ipairs(crystalTypes) do
+        RS.Events.CollectGem:FireServer(crystalId)
         task.wait(0.1)
     end
 end)
 
-MainSection:NewSlider("Exchange Amount", "Amount of Bitcoin to exchange", 1000, 1, function(v)
-    BitcoinAmount = v
+CrystalSection:NewToggle("Auto Collect Crystals", "Automatically collects crystals", function(state)
+    AutoCollectEnabled = state
+    while AutoCollectEnabled do
+        -- Auto collect all crystal types
+        local crystalTypes = {2, 3, 6}
+        for _, crystalId in ipairs(crystalTypes) do
+            RS.Events.CollectGem:FireServer(crystalId)
+            task.wait(CollectDelay)
+        end
+        task.wait(0.5) -- Wait before next collection cycle
+    end
 end)
 
-MainSection:NewButton("Exchange Bitcoin", "Exchange Bitcoin once", function()
-    for i = 1, BitcoinAmount do
+CrystalSection:NewSlider("Collection Delay", "Adjust collection speed", 1, 0.1, function(v)
+    CollectDelay = v
+end)
+
+-- Exchange Tab
+local ExchangeTab = Window:NewTab("Exchange")
+local ExchangeSection = ExchangeSection:NewSection("Currency Exchange")
+
+-- Bitcoin Exchange
+ExchangeSection:NewButton("Exchange Bitcoin", "Exchanges Bitcoin once", function()
+    RS.Events.ExchangeMoney:FireServer(true)
+end)
+
+ExchangeSection:NewToggle("Auto Exchange Bitcoin", "Automatically exchanges Bitcoin", function(state)
+    _G.AutoBitcoin = state
+    while _G.AutoBitcoin do
         RS.Events.ExchangeMoney:FireServer(true)
-        task.wait(0.1)
+        task.wait(ExchangeDelay)
     end
+end)
+
+-- Solaris Exchange
+ExchangeSection:NewButton("Exchange Solaris", "Exchanges Solaris once", function()
+    RS.Events.ExchangeMoney:FireServer(false)
+end)
+
+ExchangeSection:NewToggle("Auto Exchange Solaris", "Automatically exchanges Solaris", function(state)
+    _G.AutoSolaris = state
+    while _G.AutoSolaris do
+        RS.Events.ExchangeMoney:FireServer(false)
+        task.wait(ExchangeDelay)
+    end
+end)
+
+ExchangeSection:NewSlider("Exchange Delay", "Adjust exchange speed", 1, 0.1, function(v)
+    ExchangeDelay = v
+end)
+
+-- Algorithm Tab
+local AlgoTab = Window:NewTab("Algorithm")
+local AlgoSection = AlgoTab:NewSection("Mining Algorithm")
+
+AlgoSection:NewDropdown("Select Algorithm", "Choose mining algorithm", {"Algorithm 1", "Algorithm 2", "Algorithm 3", "Algorithm 4"}, function(value)
+    local algoMap = {
+        ["Algorithm 1"] = 1,
+        ["Algorithm 2"] = 2,
+        ["Algorithm 3"] = 3,
+        ["Algorithm 4"] = 4
+    }
+    RS.Events.AlgoChang:FireServer(algoMap[value])
 end)
 
 -- Player Tab
 local PlayerTab = Window:NewTab("Player")
 local PlayerSection = PlayerTab:NewSection("Local Player")
 
--- Walk Speed
 PlayerSection:NewSlider("Walk Speed", "Changes your walk speed", 100, 16, function(v)
     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
         LP.Character.Humanoid.WalkSpeed = v
     end
 end)
 
--- Remove Barriers
-PlayerSection:NewButton("Remove Barriers", "Removes level barriers", function()
-    for _, v in pairs(workspace:GetChildren()) do
-        if v:FindFirstChildOfClass("TouchTransmitter") and v:FindFirstChildOfClass("SurfaceGui") then
-            v:Destroy()
-        end
-    end
-end)
-
--- Credits Tab
-local CreditsTab = Window:NewTab("Credits")
-local CreditsSection = CreditsTab:NewSection("Credits")
-
-CreditsSection:NewLabel("Original by Midnight Hub")
-CreditsSection:NewLabel("Modified Version")
-
 -- Protection
 local mt = getrawmetatable(game)
-local old = mt.__namecall
 setreadonly(mt, false)
+local old = mt.__namecall
 mt.__namecall = newcclosure(function(...)
     local args = {...}
     if getnamecallmethod() == "Kick" then
@@ -83,27 +120,25 @@ mt.__namecall = newcclosure(function(...)
 end)
 setreadonly(mt, true)
 
--- Keep UI Elements Updated
-game:GetService("RunService").RenderStepped:Connect(function()
-    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-        -- Keep WalkSpeed Updated
-        if _G.WalkSpeedValue then
-            LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
-        end
-    end
-end)
-
--- Keybinds
+-- UI Toggle
 local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.RightShift then  -- Right Shift to toggle UI
+    if input.KeyCode == Enum.KeyCode.RightShift then
         Library:ToggleUI()
     end
 end)
 
 -- Notification
 game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "BCMX Hub Loaded",
-    Text = "Press Right-Shift to toggle",
+    Title = "Script Loaded",
+    Text = "Press Right-Shift to toggle GUI",
     Duration = 5
 })
+
+-- Handle Character Respawn
+LP.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid")
+    if _G.WalkSpeedValue then
+        humanoid.WalkSpeed = _G.WalkSpeedValue
+    end
+end)
