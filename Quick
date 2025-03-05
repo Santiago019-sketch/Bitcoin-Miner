@@ -1,125 +1,920 @@
--- Roblox Auto Farm and Anti-Cheat Script
+-- Midnight Hub Script for Dragon Blox
+-- Credits: Midnight Hub
 
--- Library Loading (Ensure you have a UI library like OrionLib or Rayfield)
-local Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+-- Ensure the game is loaded
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
--- Create Window
-local Window = Library:CreateWindow({
-    Name = "Event Mob Auto Farm",
-    LoadingTitle = "Script Loading",
-    LoadingSubtitle = "by Your Name",
+-- Load Rayfield Library
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/Midnight-Hub/Rayfield/main/source.lua"))()
+
+-- Initialize Rayfield
+local Window = Rayfield:CreateWindow({
+    Name = "Midnight Hub | Dragon Blox [" .. os.date("%Y") .. "]",
+    LoadingTitle = "Midnight Hub",
+    LoadingSubtitle = "by Midnight Hub",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "EventMobFarm", -- Create a folder to save configs
-        FileName = "config"
-    }
+        FolderName = "MidnightHub",
+        FileName = "DragonBlox"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvite", -- Your discord invite code
+        RememberJoins = true
+    },
+    KeySystem = true, -- Set to true to add a keybind to toggle the UI
+    Keybind = Enum.KeyCode.RightShift
 })
 
--- Create Tab
-local Tab = Window:CreateTab("Auto Farm", 4483362458) -- Icon ID can be changed
+-- Tabs
+local AutoFarmTab = Window:CreateTab("AutoFarm", "rbxassetid://4483345998")
+local TeleportsTab = Window:CreateTab("Teleports", "http://www.roblox.com/asset/?id=4335489011")
+local CodesTradesTab = Window:CreateTab("Codes/Trades", "rbxassetid://4483345998")
+local WorldsTab = Window:CreateTab("Worlds", "rbxassetid://4483345998")
+local AntisTab = Window:CreateTab("Anti's", "http://www.roblox.com/asset/?id=7734056608")
+local SpawnItemsTab = Window:CreateTab("Spawn Items", "http://www.roblox.com/asset/?id=7733674079")
+local CreditsTab = Window:CreateTab("Credits", "http://www.roblox.com/asset/?id=4370318685")
 
--- Auto Event Mobs Toggle
-Tab:CreateToggle({
-    Name = "Auto Event Mobs (Must Be Near Or On Island!)",
-    Default = false,
-    Save = true,
-    Flag = "autotpeventmobs_db",
+-- AutoFarm Section
+local AutoFarmSection = AutoFarmTab:CreateSection("AutoFarm Stuff (Rejoin to Undo)")
+
+local AutoPunch = false
+local AutoEnergy = false
+local AutoBlock = false
+local AutoAgility = false
+local AutoEnergyBall = false
+local AutoTechnique = false
+local AutoRebirth = false
+local AutoSpin = false
+local AutoDrops = false
+
+local function toggleAutoPunch(value)
+    AutoPunch = value
+    while AutoPunch and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = {
+                ["Camera"] = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame,
+                ["SkillId"] = "1",
+                ["Began"] = true,
+                ["CFrame"] = game:GetService("Workspace").Camera.CFrame,
+                ["Typ\208\181"] = 1,
+                ["Aim"] = (game:GetService("Workspace").Camera.CFrame.Position + game:GetService("Workspace").Camera.CFrame.LookVector * 100)
+            }
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SkillRemote"):FireServer(unpack(args))
+    end
+end
+
+local function toggleAutoEnergy(value)
+    AutoEnergy = value
+    while AutoEnergy and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = {
+                ["Began"] = true,
+                ["CFrame"] = game:GetService("Workspace").Camera.CFrame,
+                ["Aim"] = (game:GetService("Workspace").Camera.CFrame.Position + game:GetService("Workspace").Camera.CFrame.LookVector * 100),
+                ["Camera"] = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame,
+                ["Typ\208\181"] = 1,
+                ["SkillId"] = "2"
+            }
+        }
+        game:GetService("ReplicatedStorage").Remotes.SkillRemote:FireServer(unpack(args))
+    end
+end
+
+local function toggleAutoBlock(value)
+    AutoBlock = value
+    while AutoBlock and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = {
+                ["Began"] = true,
+                ["CFrame"] = game:GetService("Workspace").Camera.CFrame,
+                ["Aim"] = (game:GetService("Workspace").Camera.CFrame.Position + game:GetService("Workspace").Camera.CFrame.LookVector * 100),
+                ["Camera"] = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame,
+                ["Typ\208\181"] = 1,
+                ["SkillId"] = "6"
+            }
+        }
+        game:GetService("ReplicatedStorage").Remotes.SkillRemote:FireServer(unpack(args))
+    end
+end
+
+local function toggleAutoAgility(value)
+    AutoAgility = value
+    while AutoAgility and game:GetService("RunService").Heartbeat:Wait() do
+        game:GetService("Players").LocalPlayer.Character.Humanoid:Move(Vector3.new(0, 0, -1), true)
+    end
+end
+
+local function toggleAutoEnergyBall(value)
+    AutoEnergyBall = value
+    while AutoEnergyBall and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = {
+                ["Camera"] = game:GetService("Workspace").Camera.CFrame,
+                ["SkillId"] = "101",
+                ["Began"] = true,
+                ["CFrame"] = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame,
+                ["Typ\208\181"] = 1,
+                ["Aim"] = (game:GetService("Workspace").Camera.CFrame.Position + game:GetService("Workspace").Camera.CFrame.LookVector * 100)
+            }
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SkillRemote"):FireServer(unpack(args))
+    end
+end
+
+local function toggleAutoTechnique(value)
+    AutoTechnique = value
+    while AutoTechnique and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = {
+                ["Camera"] = game:GetService("Workspace").Camera.CFrame,
+                ["SkillId"] = "8",
+                ["Began"] = true,
+                ["CFrame"] = game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame,
+                ["Typ\208\181"] = 1,
+                ["Aim"] = (game:GetService("Workspace").Camera.CFrame.Position + game:GetService("Workspace").Camera.CFrame.LookVector * 100)
+            }
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("SkillRemote"):FireServer(unpack(args))
+    end
+end
+
+local function toggleAutoRebirth(value)
+    AutoRebirth = value
+    while AutoRebirth and game:GetService("RunService").Heartbeat:Wait() do
+        for i, rb in ipairs(game:GetService("Players").LocalPlayer.PlayerGui.MainGui.Frame.Stats.AspectRatioFrame.StatHUD.Frame:GetChildren()) do
+            if rb:FindFirstChild("RebirthButton") and rb:FindFirstChild("RebirthButton").BackgroundTransparency ~= 1 then
+                game:GetService("ReplicatedStorage").Packages._Index["sleitnick_knit@1.4.7"].knit.Services.PlayerLevelService.RF.RequestRebirth:InvokeServer()
+            end
+        end
+    end
+end
+
+local function toggleAutoSpin(value)
+    AutoSpin = value
+    while AutoSpin and game:GetService("RunService").Heartbeat:Wait() do
+        local args = {
+            [1] = "SpinMain"
+        }
+        game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.LootPoolService.RF.SpinRequest:InvokeServer(unpack(args))
+    end
+end
+
+local function toggleAutoDrops(value)
+    AutoDrops = value
+    while AutoDrops and game:GetService("RunService").Heartbeat:Wait() do
+        for i, v in ipairs({
+            "Chest_Vanity", "Chest_Raid", "Chest_Legendary", "Chest_Mythic",
+            "Chest_Epic", "Chest_Rare", "Chest_Uncommon", "Chest_Common"
+        }) do
+            local chest = game:GetService("Workspace"):FindFirstChild("PartStorage")
+                and game:GetService("Workspace").PartStorage:FindFirstChild(v)
+
+            if chest and chest:FindFirstChild("Base") and chest.Base:FindFirstChild("ProximityPrompt") then
+                fireproximityprompt(chest.Base.ProximityPrompt, 0)
+            end
+        end
+    end
+end
+
+-- AutoFarm Toggles
+AutoFarmTab:CreateToggle({
+    Name = "Auto Punch (Fast)",
+    CurrentValue = false,
+    Flag = "AutoPunch",
+    Callback = toggleAutoPunch
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Energy (Charge Ki/Reset To Stop!)",
+    CurrentValue = false,
+    Flag = "AutoEnergy",
+    Callback = toggleAutoEnergy
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Block",
+    CurrentValue = false,
+    Flag = "AutoBlock",
+    Callback = toggleAutoBlock
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Agility",
+    CurrentValue = false,
+    Flag = "AutoAgility",
+    Callback = toggleAutoAgility
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Energy Ball (Drains Ki)",
+    CurrentValue = false,
+    Flag = "AutoEnergyBall",
+    Callback = toggleAutoEnergyBall
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Rebirth",
+    CurrentValue = false,
+    Flag = "AutoRebirth",
+    Callback = toggleAutoRebirth
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Kaioken/Technique",
+    CurrentValue = false,
+    Flag = "AutoTechnique",
+    Callback = toggleAutoTechnique
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Spin",
+    CurrentValue = false,
+    Flag = "AutoSpin",
+    Callback = toggleAutoSpin
+})
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Grab Drops [Op]",
+    CurrentValue = false,
+    Flag = "AutoDrops",
+    Callback = toggleAutoDrops
+})
+
+-- Teleports Section
+local TeleportsSection = TeleportsTab:CreateSection("Click the Buttons to Teleport")
+
+local function teleportTo(cframe)
+    game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = cframe
+end
+
+local JirenCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain10_JigrayArea.HumanoidRootPart.CFrame
+local FriezaCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain2_PurizaArea.HumanoidRootPart.CFrame
+local CoolerCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain3_CoolestArea.HumanoidRootPart.CFrame
+local AndroidCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain4_Droid1718Area.HumanoidRootPart.CFrame
+local CellCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain5_AtomArea.HumanoidRootPart.CFrame
+local BuuCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain6_JinbuArea.HumanoidRootPart.CFrame
+local BVegetaCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain7_VeggyArea.HumanoidRootPart.CFrame
+local GokuBCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain8_BlackKarrotArea.HumanoidRootPart.CFrame
+local BrolyCF = game:GetService("Workspace").Misc.NPC.Quests.QuestNPCMain9_BrawlyArea.HumanoidRootPart.CFrame
+
+TeleportsTab:CreateButton({
+    Name = "Jiren Quest",
+    Callback = function()
+        teleportTo(JirenCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Frieza Quest",
+    Callback = function()
+        teleportTo(FriezaCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Coolest Quest",
+    Callback = function()
+        teleportTo(CoolerCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Androids Quest",
+    Callback = function()
+        teleportTo(AndroidCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Cell Quest",
+    Callback = function()
+        teleportTo(CellCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Majin Buu Quest",
+    Callback = function()
+        teleportTo(BuuCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Baby Vegeta Quest",
+    Callback = function()
+        teleportTo(BVegetaCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Goku Black Quest",
+    Callback = function()
+        teleportTo(GokuBCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Broly Quest",
+    Callback = function()
+        teleportTo(BrolyCF)
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Mobs Quest",
+    Callback = function()
+        teleportTo(CFrame.new(1428.71729, 589.68103, -2959.39966, -0.197385594, 3.75241243e-08, -0.980325937, 1.59155693e-08, 1, 3.50726417e-08, 0.980325937, -8.67961081e-09, -0.197385594))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Quest Board",
+    Callback = function()
+        teleportTo(CFrame.new(1373.15442, 598.714233, -2792.40356, -0.842817366, -3.27753713e-10, -0.538199723, -6.98626268e-10, 1, 4.85062712e-10, 0.538199723, 7.84819709e-10, -0.842817366))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "World Teleporter",
+    Callback = function()
+        teleportTo(CFrame.new(1308.73767, 590.966797, -2994.11597, -0.242444679, 5.55411894e-08, -0.970165253, 3.81573484e-09, 1, 5.62956508e-08, 0.970165253, -9.94668792e-09, -0.242444679))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Ocean",
+    Callback = function()
+        teleportTo(CFrame.new(2078, 589, 1744))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Piccolo",
+    Callback = function()
+        teleportTo(CFrame.new(1276.79102, 591.04303, -2915.26123, -0.940263867, 3.25475753e-08, 0.340446591, 2.13354454e-08, 1, 8.72352217e-08, 0.340446591, -1.04562069e-07, -0.940263867))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Tutorial",
+    Callback = function()
+        teleportTo(CFrame.new(-1978.27039, -67.7249374, 2282.25049, 1, 1.42251464e-08, -1.01907381e-13, -1.42251464e-08, 1, -2.78698717e-08, 1.01510929e-13, 2.78698717e-08, 1))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Premium Fusion (Requires Roblox Premium)",
+    Callback = function()
+        teleportTo(CFrame.new(1369.20447, 590.932251, -2870.10815, -0.419576734, 1.09318696e-08, -0.907719851, -9.90776439e-09, 1, 1.66229004e-08, 0.907719851, 1.59680571e-08, -0.419576734))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Vegeta Fusion",
+    Callback = function()
+        teleportTo(CFrame.new(-639.25415, 988.875061, -2697.02563, -0.0209753737, -5.05985343e-09, 0.999779999, -2.22242824e-09, 1, 5.0143405e-09, -0.999779999, -2.11676165e-09, -0.0209753737))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Goku Fusion",
+    Callback = function()
+        teleportTo(CFrame.new(2417.25415, 569.399048, -4974.60449, 0.98227036, -1.31336657e-08, -0.187469915, 2.13354454e-08, 1, 4.17320862e-08, 0.187469915, -4.49919462e-08, 0.98227036))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Mecha Raid",
+    Callback = function()
+        teleportTo(CFrame.new(2764.01343, 598.989624, -6492.21436, 0.997432649, 1.88816851e-09, -0.0716105923, 2.3148734e-09, 1, 5.86100271e-08, 0.0716105923, -5.8625325e-08, 0.997432649))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Mecha Raid Inside",
+    Callback = function()
+        teleportTo(CFrame.new(2805.22241, 573.055237, -6989.87402, 0.989533603, -1.73532921e-09, -0.144302592, 1.54452433e-09, 1, -1.43428176e-09, 0.144302592, 1.19639116e-08, 0.989533603))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Time Island (3 Rebirths)",
+    Callback = function()
+        teleportTo(CFrame.new(24610.9727, -440.759705, -7095.78662, 0.533501804, -5.29121502e-09, -0.84579891, 7.58926788e-09, 1, -1.46882018e-09, 0.84579891, -5.63537661e-09, 0.533501804))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Seijin Lab (20 Rebirths)",
+    Callback = function()
+        teleportTo(CFrame.new(24441.0176, -480.747131, -5863.43311, -0.0376503058, -8.69608456e-09, -0.999291003, -1.85882474e-08, 1, -8.63221956e-09, 0.999291003, 1.53250106e-08, -0.0376503058))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "Capsule Room (30 Rebirths)",
+    Callback = function()
+        teleportTo(CFrame.new(24299.1719, -408.880127, -6112.53564, -0.529828608, -8.35633429e-09, -0.848104715, -1.8391848e-08, 1, -8.70397372e-09, 0.848104715, -3.05179313e-08, -0.529828608))
+    end
+})
+
+TeleportsTab:CreateButton({
+    Name = "King Kai's Planet (100 Rebirths)",
+    Callback = function()
+        teleportTo(CFrame.new(24417.8848, -101.543587, -8261.84082, 0.587491751, 7.03139804e-09, -0.809230149, -2.1431493e-09, 1, 7.13309447e-09, 0.809230149, -2.45633327e-09, 0.587491751))
+    end
+})
+
+-- Codes/Trades Section
+local CodesTradesSection = CodesTradesTab:CreateSection("Codes/Trades")
+
+CodesTradesTab:CreateInput({
+    Name = "Codes (Redeem!)",
+    PlaceholderText = "Enter Code",
+    RemoveTextAfterFocusLost = false,
     Callback = function(Value)
-        getgenv().autotpeventmobs = Value
-        task.spawn(function()
-            while getgenv().autotpeventmobs do
-                task.wait(1.25)
-                local char = game:GetService("Players").LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid").Health > 0 then
-                    local eventMobs = game:GetService("Workspace"):FindFirstChild("World Mobs") and game:GetService("Workspace")["World Mobs"]:FindFirstChild("Event Mobs")
-                    if eventMobs then
-                        for i, mob in ipairs(eventMobs:GetChildren()) do
-                            if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") 
-                                and mob.Humanoid.Health > 0 and not table.find({"Damage Dummy Permanent", "Zariel", "Mecha Soldier"}, mob.Name) then
-                                while mob.Humanoid.Health > 0 and char.Humanoid.Health > 0 and getgenv().autotpeventmobs do
-                                    char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                                    char.HumanoidRootPart.CFrame = CFrame.lookAt(char.HumanoidRootPart.Position, mob.HumanoidRootPart.Position + mob.HumanoidRootPart.CFrame.LookVector * -1)
-                                    task.wait(1.25)
-                                end
-                                task.wait(1.25)
-                            end
-                        end
+        local args = {
+            [1] = {
+                ["UniqueTag"] = "RedeemCode",
+                ["InputText"] = Value,
+                ["InputType"] = "Text",
+                ["LeftButton"] = "Redeem",
+                ["Description"] = "Redeem Code",
+                ["Prompt"] = "RedeemCode",
+                ["RightButton"] = "Cancel",
+                ["Title"] = "Codes"
+            },
+            [2] = "Redeem"
+        }
+        game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.PromptService.RE.Prompt:FireServer(unpack(args))
+    end
+})
+
+CodesTradesTab:CreateInput({
+    Name = "Trades (Enter Player Username Here!)",
+    PlaceholderText = "Enter Player Username",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Value)
+        local player = game:GetService("Players"):FindFirstChild(Value)
+        if player then
+            Rayfield:Notify({
+                Title = "Player Found!",
+                Content = "Sending Trade!",
+                Duration = 5,
+                Image = "rbxassetid://4483345998"
+            })
+            local args = {
+                [1] = player
+            }
+            game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.TradeService.RE.RequestTrade:FireServer(unpack(args))
+        else
+            Rayfield:Notify({
+                Title = "Player Not Found!",
+                Content = "That Player Does Not Exist. Please Try Again!",
+                Duration = 5,
+                Image = "rbxassetid://4483345998"
+            })
+        end
+    end
+})
+
+-- Worlds Section
+local WorldsSection = WorldsTab:CreateSection("Click The Button To Be Teleported To That World")
+
+WorldsTab:CreateButton({
+    Name = "Main World",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(3177438863)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "Crimson Planet (30 Rebirths Required)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(7040546583)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "Planet Droid (150 Rebirths Required)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(7888441249)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "World Of Tournament (Script Won't Work Here!)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(7379325123)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "Battlegrounds (Script Won't Work Here!)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(14516089806)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "AFK World (Script Won't Work Here!)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(18501029209)
+    end
+})
+
+WorldsTab:CreateButton({
+    Name = "Trade Hub (Script Won't Work Here!)",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(18408422178)
+    end
+})
+
+-- Anti's Section
+local AntisSection = AntisTab:CreateSection("Anti's")
+
+local AntiAdmins = false
+local AntiKick = false
+local AntiDestroy = false
+local AntiAfk = false
+
+local function toggleAntiAdmins(value)
+    AntiAdmins = value
+    while AntiAdmins and game:GetService("RunService").Heartbeat:Wait() do
+        local AdminNames = {
+            "Jirenato",
+            "ReignImperatus",
+            "Zephyrus_Yi",
+            "ratedroeh",
+            "Natt_P5",
+            "O_ORui",
+            "BexDragoon",
+            "pokemonhaden",
+            "XADED4971",
+            "AltForTGBN",
+            "notrmdx",
+            "Npinoy"
+        }
+
+        for i, player in ipairs(game:GetService("Players"):GetPlayers()) do
+            if table.find(AdminNames, player.Name) then
+                game:GetService("Players").LocalPlayer:Kick("Holy shit admin detected! You almost got banned there bud!")
+            end
+        end
+
+        task.wait(0.1)
+    end
+end
+
+local function toggleAntiKick(value)
+    AntiKick = value
+    if value then
+        local plr = game:GetService("Players").LocalPlayer
+        local Anti
+        Anti = hookmetamethod(game, "__namecall", function(self, ...)
+            if self == plr and getnamecallmethod():lower() == "kick" and AntiKick then
+                return warn("[ANTI-KICK] Client Tried To Call Kick Function On LocalPlayer")
+            end
+            return Anti(self, ...)
+        end)
+    else
+        if Anti then
+            AntiKick = false
+            hookmetamethod(game, "__namecall", Anti)
+            Anti = nil
+        end
+    end
+end
+
+local function toggleAntiDestroy(value)
+    AntiDestroy = value
+    if value then
+        local plr = game:GetService("Players").LocalPlayer
+        local Anti
+        Anti = hookmetamethod(game, "__namecall", function(self, ...)
+            if self == plr and getnamecallmethod():lower() == "destroy" and AntiDestroy then
+                return warn("[ANTI-DESTROY] Client Tried To Call Destroy Function On LocalPlayer")
+            end
+            return Anti(self, ...)
+        end)
+    else
+        if Anti then
+            AntiDestroy = false
+            hookmetamethod(game, "__namecall", Anti)
+            Anti = nil
+        end
+    end
+end
+
+local function toggleAntiAfk(value)
+    if value then
+        local GC = getconnections or get_signal_cons
+        if GC then
+            for i, v in ipairs(GC(game:GetService("Players").LocalPlayer.Idled)) do
+                if v["Disable"] then
+                    v["Disable"](v)
+                elseif v["Disconnect"] then
+                    v["Disconnect"](v)
+                end
+            end
+        else
+            local VirtualUser = game:GetService("VirtualUser")
+            game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+    end
+end
+
+AntisTab:CreateToggle({
+    Name = "Anti Admins (Don't use with anti kick!)",
+    CurrentValue = false,
+    Flag = "AntiAdmins",
+    Callback = toggleAntiAdmins
+})
+
+AntisTab:CreateToggle({
+    Name = "Anti Kick",
+    CurrentValue = false,
+    Flag = "AntiKick",
+    Callback = toggleAntiKick
+})
+
+AntisTab:CreateToggle({
+    Name = "Anti Destroy",
+    CurrentValue = false,
+    Flag = "AntiDestroy",
+    Callback = toggleAntiDestroy
+})
+
+AntisTab:CreateToggle({
+    Name = "Anti Afk",
+    CurrentValue = false,
+    Flag = "AntiAfk",
+    Callback = toggleAntiAfk
+})
+
+-- Spawn Items Section
+local SpawnItemsSection = SpawnItemsTab:CreateSection("Spawn Items")
+
+local function teleportToRelics()
+    local positions = {
+        CFrame.new(-79.0546875, 1028.22473, -6673.70459, 0.707134247, 0, 0.707079291, 0, 1, 0, -0.707079291, 0, 0.707134247),
+        CFrame.new(-177.064117, 589.521912, -8801.30469, 0.707068086, 0, 0.707145572, 0, 1, 0, -0.707145572, 0, 0.707068086),
+        CFrame.new(3675.07983, 721.521851, -9831.35059, 0.422592998, 0, 0.906319618, 0, 1, 0, -0.906319618, 0, 0.422592998),
+        CFrame.new(6087.94385, 885.225159, -8145.24512, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(6814.11963, 586.225159, -5358.44434, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(3134.06689, 585.223816, -3038.94849, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+    }
+
+    for i, position in ipairs(positions) do
+        game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = position
+        task.wait(5)
+    end
+end
+
+local function teleportToRelicsStay()
+    local positions = {
+        CFrame.new(-79.0546875, 1028.22473, -6673.70459, 0.707134247, 0, 0.707079291, 0, 1, 0, -0.707079291, 0, 0.707134247),
+        CFrame.new(-177.064117, 589.521912, -8801.30469, 0.707068086, 0, 0.707145572, 0, 1, 0, -0.707145572, 0, 0.707068086),
+        CFrame.new(3675.07983, 721.521851, -9831.35059, 0.422592998, 0, 0.906319618, 0, 1, 0, -0.906319618, 0, 0.422592998),
+        CFrame.new(6087.94385, 885.225159, -8145.24512, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(6814.11963, 586.225159, -5358.44434, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(3134.06689, 585.223816, -3038.94849, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+    }
+
+    for i, position in ipairs(positions) do
+        local endTime = tick() + 5
+        while tick() < endTime do
+            game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = position
+            task.wait(1.25)
+        end
+    end
+end
+
+local function autoTeleportToRelics()
+    local positions = {
+        CFrame.new(-79.0546875, 1028.22473, -6673.70459, 0.707134247, 0, 0.707079291, 0, 1, 0, -0.707079291, 0, 0.707134247),
+        CFrame.new(-177.064117, 589.521912, -8801.30469, 0.707068086, 0, 0.707145572, 0, 1, 0, -0.707145572, 0, 0.707068086),
+        CFrame.new(3675.07983, 721.521851, -9831.35059, 0.422592998, 0, 0.906319618, 0, 1, 0, -0.906319618, 0, 0.422592998),
+        CFrame.new(6087.94385, 885.225159, -8145.24512, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(6814.11963, 586.225159, -5358.44434, 0.766061246, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, 0.766061246),
+        CFrame.new(3134.06689, 585.223816, -3038.94849, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+    }
+
+    while true and game:GetService("RunService").Heartbeat:Wait() do
+        for i, position in ipairs(positions) do
+            game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame = position
+            task.wait(5)
+        end
+    end
+end
+
+SpawnItemsTab:CreateButton({
+    Name = "Teleport To Relics",
+    Callback = teleportToRelics
+})
+
+SpawnItemsTab:CreateButton({
+    Name = "Teleport To Relics 2 (Stay At Current Location!)",
+    Callback = teleportToRelicsStay
+})
+
+SpawnItemsTab:CreateToggle({
+    Name = "Auto Teleport To Relics",
+    CurrentValue = false,
+    Flag = "AutoTeleportToRelics",
+    Callback = function(value)
+        if value then
+            autoTeleportToRelics()
+        end
+    end
+})
+
+SpawnItemsTab:CreateToggle({
+    Name = "Auto Teleport To Relics 2 (Stay At Current Location!)",
+    CurrentValue = false,
+    Flag = "AutoTeleportToRelicsStay",
+    Callback = function(value)
+        if value then
+            autoTeleportToRelics()
+        end
+    end
+})
+
+local function autoNearbyInteract()
+    while true do
+        if game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            for _, v in ipairs(game:GetService("Workspace"):GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    if ((game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude <= 10) then
+                        fireproximityprompt(v)
                     end
                 end
             end
-        end)
+        end
+        task.wait(1)
     end
-})
+end
 
--- Anti-Cheat Tab
-local CheatTab = Window:CreateTab("Anti-Cheat", 4483362458) -- Icon ID can be changed
-
--- Anti Kick Toggle
-CheatTab:CreateToggle({
-    Name = "Anti Kick",
-    Default = false,
-    Save = true,
-    Flag = "antikick_db",
-    Callback = function(Value)
-        getgenv().Anti = Value
-        if Value then
-            local plr = game:GetService("Players").LocalPlayer
-            local Anti
-            Anti = hookmetamethod(game, "__namecall", function(self, ...)
-                if self == plr and getnamecallmethod():lower() == "kick" and getgenv().Anti then
-                    return warn("[ANTI-KICK] Client Tried To Call Kick Function On LocalPlayer")
+local function autoNearbyInteract2()
+    while true do
+        if game:GetService("Players").LocalPlayer.Character:FindFirstChild("Head") then
+            for _, v in ipairs(game:GetService("Workspace"):GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    if ((game:GetService("Players").LocalPlayer.Character.Head.Position - v.Parent.Position).Magnitude <= 10) then
+                        fireproximityprompt(v)
+                    end
                 end
-                return Anti(self, ...)
-            end)
-        else
-            if Anti then
-                getgenv().Anti = false
-                hookmetamethod(game, "__namecall", Anti)
-                Anti = nil
+            end
+        end
+        task.wait(1)
+    end
+end
+
+local function instantNearbyInteract()
+    if game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        for _, v in ipairs(game:GetService("Workspace"):GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                if ((game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude <= 10) then
+                    fireproximityprompt(v)
+                end
             end
         end
     end
-})
+end
 
--- Anti Destroy Toggle
-CheatTab:CreateToggle({
-    Name = "Anti Destroy",
-    Default = false,
-    Save = true,
-    Flag = "antidestroy_db",
-    Callback = function(Value)
-        getgenv().Anti = Value
-        if Value then
-            local plr = game:GetService("Players").LocalPlayer
-            local Anti
-            Anti = hookmetamethod(game, "__namecall", function(self, ...)
-                if self == plr and getnamecallmethod():lower() == "destroy" and getgenv().Anti then
-                    return warn("[ANTI-DESTROY] Client Tried To Call Destroy Function On LocalPlayer")
+local function instantNearbyInteract2()
+    if game:GetService("Players").LocalPlayer.Character:FindFirstChild("Head") then
+        for _, v in ipairs(game:GetService("Workspace"):GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                if ((game:GetService("Players").LocalPlayer.Character.Head.Position - v.Parent.Position).Magnitude <= 10) then
+                    fireproximityprompt(v)
                 end
-                return Anti(self, ...)
-            end)
-        else
-            if Anti then
-                getgenv().Anti = false
-                hookmetamethod(game, "__namecall", Anti)
-                Anti = nil
             end
         end
     end
+end
+
+SpawnItemsTab:CreateToggle({
+    Name = "Auto Nearby Interact",
+    CurrentValue = false,
+    Flag = "AutoNearbyInteract",
+    Callback = autoNearbyInteract
 })
 
--- Notification when script loads
-Library:Notify({
-    Title = "Script Loaded",
-    Content = "Event Mob Auto Farm and Anti-Cheat tools are ready!",
-    Duration = 5,
-    Image = 4483362458
+SpawnItemsTab:CreateToggle({
+    Name = "Auto Nearby Interact 2 (Maybe Use 1!)",
+    CurrentValue = false,
+    Flag = "AutoNearbyInteract2",
+    Callback = autoNearbyInteract2
 })
 
--- Optional: Add a button to destroy the GUI if needed
-CheatTab:CreateButton({
-    Name = "Destroy GUI",
+SpawnItemsTab:CreateButton({
+    Name = "Instant Nearby Interact",
+    Callback = instantNearbyInteract
+})
+
+SpawnItemsTab:CreateButton({
+    Name = "Instant Nearby Interact 2 (Maybe use 1!)",
+    Callback = instantNearbyInteract2
+})
+
+SpawnItemsTab:CreateButton({
+    Name = "Buy 3 Wish Tokens (Need 7 Relics!)",
     Callback = function()
-        Library:Destroy()
+        local args = {
+            [1] = "Standard",
+            [2] = 1
+        }
+        game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.WishService.RF.buyFromShop:InvokeServer(unpack(args))
     end
 })
+
+SpawnItemsTab:CreateButton({
+    Name = "Buy Premium Wish Tokens (Need Gold!)",
+    Callback = function()
+        local args = {
+            [1] = "Premium",
+            [2] = 1
+        }
+        game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.WishService.RF.buyFromShop:InvokeServer(unpack(args))
+    end
+})
+
+-- Credits Section
+local CreditsSection = CreditsTab:CreateSection("Credits")
+
+CreditsTab:CreateLabel("Script is made by Midnight Hub")
+CreditsTab:CreateLabel("Join the discord for support")
+
+CreditsTab:CreateButton({
+    Name = "Discord",
+    Callback = function()
+        setclipboard("https://discord.gg/kKaZEfW7zv")
+    end
+})
+
+CreditsTab:CreateButton({
+    Name = "YouTube",
+    Callback = function()
+        setclipboard("https://m.youtube.com/channel/UCvXEiClhdiICCgSVzkEIT3A")
+    end
+})
+
+CreditsTab:CreateButton({
+    Name = "GitHub",
+    Callback = function()
+        setclipboard("https://github.com/Chaosscripter")
+    end
+})
+
+CreditsTab:CreateKeybind({
+    Name = "UI Toggle Keybind",
+    CurrentKeybind = Enum.KeyCode.RightShift,
+    HoldToInteract = false,
+    Flag = "UI Toggle",
+    Callback = function(Keybind)
+        Rayfield:GetConfig().Keybind = Keybind
+    end
+})
+
+-- Initialize necessary services
+local HttpService = game:GetService("HttpService")
+
+-- Your RapidAPI key
+local apiKey = "ea3f904005msh9dfe5b64e8638f2p1dd343jsn4d229b970349"
+
+-- Define the URL for the API status endpoint
+local url = "https://exercisedb.p.rapidapi.com/status"
+
+-- Define the headers for the request
+local headers = {
+    ["x-rapidapi-host"] = "exercisedb.p.rapidapi.com",
+    ["x-rapidapi-key"] = apiKey
+}
+
+-- Function to fetch API status
+local function fetchApiStatus()
+    local success, response = pcall(function()
+        return HttpService:JSONDecode(HttpService:RequestAsync({
+            Url = url,
+            Method = "GET",
+            Headers = headers
+        }))
+    end)
+
+    if success then
+        print("API Status:", response)
+    else
+        print("Failed to retrieve API status:", response)
+    end
+end
+
+-- Call the function to fetch and print the API status
+fetchApiStatus()
