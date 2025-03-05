@@ -1,0 +1,125 @@
+-- Roblox Auto Farm and Anti-Cheat Script
+
+-- Library Loading (Ensure you have a UI library like OrionLib or Rayfield)
+local Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+
+-- Create Window
+local Window = Library:CreateWindow({
+    Name = "Event Mob Auto Farm",
+    LoadingTitle = "Script Loading",
+    LoadingSubtitle = "by Your Name",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "EventMobFarm", -- Create a folder to save configs
+        FileName = "config"
+    }
+})
+
+-- Create Tab
+local Tab = Window:CreateTab("Auto Farm", 4483362458) -- Icon ID can be changed
+
+-- Auto Event Mobs Toggle
+Tab:CreateToggle({
+    Name = "Auto Event Mobs (Must Be Near Or On Island!)",
+    Default = false,
+    Save = true,
+    Flag = "autotpeventmobs_db",
+    Callback = function(Value)
+        getgenv().autotpeventmobs = Value
+        task.spawn(function()
+            while getgenv().autotpeventmobs do
+                task.wait(1.25)
+                local char = game:GetService("Players").LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid").Health > 0 then
+                    local eventMobs = game:GetService("Workspace"):FindFirstChild("World Mobs") and game:GetService("Workspace")["World Mobs"]:FindFirstChild("Event Mobs")
+                    if eventMobs then
+                        for i, mob in ipairs(eventMobs:GetChildren()) do
+                            if mob:IsA("Model") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") 
+                                and mob.Humanoid.Health > 0 and not table.find({"Damage Dummy Permanent", "Zariel", "Mecha Soldier"}, mob.Name) then
+                                while mob.Humanoid.Health > 0 and char.Humanoid.Health > 0 and getgenv().autotpeventmobs do
+                                    char.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                                    char.HumanoidRootPart.CFrame = CFrame.lookAt(char.HumanoidRootPart.Position, mob.HumanoidRootPart.Position + mob.HumanoidRootPart.CFrame.LookVector * -1)
+                                    task.wait(1.25)
+                                end
+                                task.wait(1.25)
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+
+-- Anti-Cheat Tab
+local CheatTab = Window:CreateTab("Anti-Cheat", 4483362458) -- Icon ID can be changed
+
+-- Anti Kick Toggle
+CheatTab:CreateToggle({
+    Name = "Anti Kick",
+    Default = false,
+    Save = true,
+    Flag = "antikick_db",
+    Callback = function(Value)
+        getgenv().Anti = Value
+        if Value then
+            local plr = game:GetService("Players").LocalPlayer
+            local Anti
+            Anti = hookmetamethod(game, "__namecall", function(self, ...)
+                if self == plr and getnamecallmethod():lower() == "kick" and getgenv().Anti then
+                    return warn("[ANTI-KICK] Client Tried To Call Kick Function On LocalPlayer")
+                end
+                return Anti(self, ...)
+            end)
+        else
+            if Anti then
+                getgenv().Anti = false
+                hookmetamethod(game, "__namecall", Anti)
+                Anti = nil
+            end
+        end
+    end
+})
+
+-- Anti Destroy Toggle
+CheatTab:CreateToggle({
+    Name = "Anti Destroy",
+    Default = false,
+    Save = true,
+    Flag = "antidestroy_db",
+    Callback = function(Value)
+        getgenv().Anti = Value
+        if Value then
+            local plr = game:GetService("Players").LocalPlayer
+            local Anti
+            Anti = hookmetamethod(game, "__namecall", function(self, ...)
+                if self == plr and getnamecallmethod():lower() == "destroy" and getgenv().Anti then
+                    return warn("[ANTI-DESTROY] Client Tried To Call Destroy Function On LocalPlayer")
+                end
+                return Anti(self, ...)
+            end)
+        else
+            if Anti then
+                getgenv().Anti = false
+                hookmetamethod(game, "__namecall", Anti)
+                Anti = nil
+            end
+        end
+    end
+})
+
+-- Notification when script loads
+Library:Notify({
+    Title = "Script Loaded",
+    Content = "Event Mob Auto Farm and Anti-Cheat tools are ready!",
+    Duration = 5,
+    Image = 4483362458
+})
+
+-- Optional: Add a button to destroy the GUI if needed
+CheatTab:CreateButton({
+    Name = "Destroy GUI",
+    Callback = function()
+        Library:Destroy()
+    end
+})
