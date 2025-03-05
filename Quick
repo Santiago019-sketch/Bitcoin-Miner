@@ -1,17 +1,9 @@
--- Midnight Hub Script for Dragon Blox
--- Credits: Midnight Hub
+-- Load Kohl's Admin Infinite Library
+local KohlAdmin = loadstring(game:HttpGet("https://raw.githubusercontent.com/KohlAdmin/Kohl-Admin/main/Main.lua"))()
 
--- Ensure the game is loaded
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
--- Load Rayfield Library
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/Midnight-Hub/Rayfield/main/source.lua"))()
-
--- Initialize Rayfield
-local Window = Rayfield:CreateWindow({
-    Name = "Midnight Hub | Dragon Blox [" .. os.date("%Y") .. "]",
+-- Create a new UI instance
+local UI = KohlAdmin:CreateWindow({
+    Name = "Midnight Hub | Dragon Blox",
     LoadingTitle = "Midnight Hub",
     LoadingSubtitle = "by Midnight Hub",
     ConfigurationSaving = {
@@ -29,13 +21,13 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Tabs
-local AutoFarmTab = Window:CreateTab("AutoFarm", "rbxassetid://4483345998")
-local TeleportsTab = Window:CreateTab("Teleports", "http://www.roblox.com/asset/?id=4335489011")
-local CodesTradesTab = Window:CreateTab("Codes/Trades", "rbxassetid://4483345998")
-local WorldsTab = Window:CreateTab("Worlds", "rbxassetid://4483345998")
-local AntisTab = Window:CreateTab("Anti's", "http://www.roblox.com/asset/?id=7734056608")
-local SpawnItemsTab = Window:CreateTab("Spawn Items", "http://www.roblox.com/asset/?id=7733674079")
-local CreditsTab = Window:CreateTab("Credits", "http://www.roblox.com/asset/?id=4370318685")
+local AutoFarmTab = UI:CreateTab("AutoFarm")
+local TeleportsTab = UI:CreateTab("Teleports")
+local CodesTradesTab = UI:CreateTab("Codes/Trades")
+local WorldsTab = UI:CreateTab("Worlds")
+local AntisTab = UI:CreateTab("Anti's")
+local SpawnItemsTab = UI:CreateTab("Spawn Items")
+local CreditsTab = UI:CreateTab("Credits")
 
 -- AutoFarm Section
 local AutoFarmSection = AutoFarmTab:CreateSection("AutoFarm Stuff (Rejoin to Undo)")
@@ -461,7 +453,7 @@ CodesTradesTab:CreateInput({
     Callback = function(Value)
         local player = game:GetService("Players"):FindFirstChild(Value)
         if player then
-            Rayfield:Notify({
+            UI:Notify({
                 Title = "Player Found!",
                 Content = "Sending Trade!",
                 Duration = 5,
@@ -472,7 +464,7 @@ CodesTradesTab:CreateInput({
             }
             game:GetService("ReplicatedStorage").Packages._Index:FindFirstChild("sleitnick_knit@1.4.7").knit.Services.TradeService.RE.RequestTrade:FireServer(unpack(args))
         else
-            Rayfield:Notify({
+            UI:Notify({
                 Title = "Player Not Found!",
                 Content = "That Player Does Not Exist. Please Try Again!",
                 Duration = 5,
@@ -880,41 +872,9 @@ CreditsTab:CreateKeybind({
     HoldToInteract = false,
     Flag = "UI Toggle",
     Callback = function(Keybind)
-        Rayfield:GetConfig().Keybind = Keybind
+        UI:GetConfig().Keybind = Keybind
     end
 })
 
--- Initialize necessary services
-local HttpService = game:GetService("HttpService")
-
--- Your RapidAPI key
-local apiKey = "ea3f904005msh9dfe5b64e8638f2p1dd343jsn4d229b970349"
-
--- Define the URL for the API status endpoint
-local url = "https://exercisedb.p.rapidapi.com/status"
-
--- Define the headers for the request
-local headers = {
-    ["x-rapidapi-host"] = "exercisedb.p.rapidapi.com",
-    ["x-rapidapi-key"] = apiKey
-}
-
--- Function to fetch API status
-local function fetchApiStatus()
-    local success, response = pcall(function()
-        return HttpService:JSONDecode(HttpService:RequestAsync({
-            Url = url,
-            Method = "GET",
-            Headers = headers
-        }))
-    end)
-
-    if success then
-        print("API Status:", response)
-    else
-        print("Failed to retrieve API status:", response)
-    end
-end
-
--- Call the function to fetch and print the API status
-fetchApiStatus()
+-- Initialize the UI
+UI:LoadConfiguration()
